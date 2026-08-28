@@ -92,7 +92,7 @@ class OverviewSection(BaseSectionRenderer):
         for key, value in metrics.items():
             if key not in [d[0] for d in card_definitions]:
                 formatted_value = self._format_metric_value(key, value)
-                label = key.replace("_", " ").title()
+                label = labels.get(f"overview.{key}", key.replace("_", " ").title())
                 cards.append(f'''
                     <div class="metric-card">
                         <div class="metric-content">

@@ -366,6 +366,7 @@ class HTMLReportBuilder:
             "overview.column_count": self._label("stats.columns", "Columns"),
             "overview.memory_bytes": self._label("stats.memory", "Memory"),
             "overview.duplicate_rows": self._label("stats.duplicates", "Duplicates"),
+            "overview.duplicate_ratio": self._label("stats.duplicate_ratio", "Duplicate Ratio"),
             "overview.null_cells": self._label("stats.missing", "Missing"),
             "overview.quality_score": self._label("stats.quality", "Quality"),
             "overview.row_count.desc": self._label("stats.rows.desc", "Total number of rows"),
