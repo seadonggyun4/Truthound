@@ -15,6 +15,16 @@ html = generate_html_report(
     output_path="report.html",
 )
 
+# Korean public/research report labels
+html = generate_html_report(
+    profile=profile_dict,
+    title="데이터 품질 분석 보고서",
+    subtitle="한국 공공·연구용 A4 보고서",
+    theme="light",
+    language="ko",
+    output_path="report-ko.html",
+)
+
 # Generate from file
 from truthound.datadocs import generate_report_from_file
 
@@ -44,6 +54,11 @@ html = builder.build(
 )
 builder.save(html, "report.html")
 ```
+
+For localized reports, pass `language="ko"` to `HTMLReportBuilder` or
+`generate_html_report`. This localizes the built-in table of contents, section
+titles, metric labels, table headers, chart titles, footer text, and PDF cover
+metadata while preserving user-provided titles and source column names.
 
 ### Detailed Configuration with ReportConfig
 

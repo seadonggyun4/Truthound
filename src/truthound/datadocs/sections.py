@@ -39,7 +39,7 @@ class OverviewSection(BaseSectionRenderer):
         chart_renderer: BaseChartRenderer,
         theme: ThemeConfig,
     ) -> str:
-        metrics_html = self._render_metric_cards(spec.metrics)
+        metrics_html = self._render_metric_cards(spec.metrics, spec.metadata.get("labels", {}))
         charts_html = self._render_charts(spec.charts, chart_renderer)
         alerts_html = self._render_alerts(spec.alerts, theme)
 
@@ -58,19 +58,20 @@ class OverviewSection(BaseSectionRenderer):
 </section>
 '''
 
-    def _render_metric_cards(self, metrics: dict[str, Any]) -> str:
+    def _render_metric_cards(self, metrics: dict[str, Any], labels: dict[str, str] | None = None) -> str:
         """Render metric cards for overview."""
         if not metrics:
             return ""
 
+        labels = labels or {}
         cards = []
         card_definitions = [
-            ("row_count", "Rows", "Total number of rows", "icon-rows"),
-            ("column_count", "Columns", "Total number of columns", "icon-columns"),
-            ("memory_bytes", "Memory", "Estimated memory size", "icon-memory"),
-            ("duplicate_rows", "Duplicates", "Duplicate row count", "icon-duplicates"),
-            ("null_cells", "Missing", "Total null cells", "icon-missing"),
-            ("quality_score", "Quality", "Overall data quality", "icon-quality"),
+            ("row_count", labels.get("overview.row_count", "Rows"), labels.get("overview.row_count.desc", "Total number of rows"), "icon-rows"),
+            ("column_count", labels.get("overview.column_count", "Columns"), labels.get("overview.column_count.desc", "Total number of columns"), "icon-columns"),
+            ("memory_bytes", labels.get("overview.memory_bytes", "Memory"), labels.get("overview.memory_bytes.desc", "Estimated memory size"), "icon-memory"),
+            ("duplicate_rows", labels.get("overview.duplicate_rows", "Duplicates"), labels.get("overview.duplicate_rows.desc", "Duplicate row count"), "icon-duplicates"),
+            ("null_cells", labels.get("overview.null_cells", "Missing"), labels.get("overview.null_cells.desc", "Total null cells"), "icon-missing"),
+            ("quality_score", labels.get("overview.quality_score", "Quality"), labels.get("overview.quality_score.desc", "Overall data quality"), "icon-quality"),
         ]
 
         for key, label, desc, icon_class in card_definitions:
@@ -141,7 +142,12 @@ class ColumnsSection(BaseSectionRenderer):
         theme: ThemeConfig,
     ) -> str:
         tables_html = self._render_column_tables(spec.tables)
-        column_cards = self._render_column_cards(spec.metadata.get("columns", []), chart_renderer)
+        labels = spec.metadata.get("labels", {})
+        column_cards = self._render_column_cards(
+            spec.metadata.get("columns", []),
+            chart_renderer,
+            labels,
+        )
 
         return f'''
 <section class="report-section section-columns" id="section-columns">
@@ -193,14 +199,16 @@ class ColumnsSection(BaseSectionRenderer):
         self,
         columns: list[dict[str, Any]],
         chart_renderer: BaseChartRenderer,
+        labels: dict[str, str] | None = None,
     ) -> str:
         """Render detailed column cards."""
         if not columns:
             return ""
 
+        labels = labels or {}
         cards = []
         for col in columns:
-            name = col.get("name", "Unknown")
+            name = col.get("name", labels.get("column.unknown", "Unknown"))
             dtype = col.get("physical_type", col.get("dtype", "unknown"))
             inferred = col.get("inferred_type", "")
             null_ratio = col.get("null_ratio", 0)
@@ -233,10 +241,10 @@ class ColumnsSection(BaseSectionRenderer):
                 dist = col["distribution"]
                 stats_html = f'''
                     <div class="column-stats">
-                        <div class="stat"><span class="stat-label">Min</span><span class="stat-value">{dist.get("min", "-")}</span></div>
-                        <div class="stat"><span class="stat-label">Max</span><span class="stat-value">{dist.get("max", "-")}</span></div>
-                        <div class="stat"><span class="stat-label">Mean</span><span class="stat-value">{self._format_number(dist.get("mean"))}</span></div>
-                        <div class="stat"><span class="stat-label">Std</span><span class="stat-value">{self._format_number(dist.get("std"))}</span></div>
+                        <div class="stat"><span class="stat-label">{labels.get("column.min", "Min")}</span><span class="stat-value">{dist.get("min", "-")}</span></div>
+                        <div class="stat"><span class="stat-label">{labels.get("column.max", "Max")}</span><span class="stat-value">{dist.get("max", "-")}</span></div>
+                        <div class="stat"><span class="stat-label">{labels.get("column.mean", "Mean")}</span><span class="stat-value">{self._format_number(dist.get("mean"))}</span></div>
+                        <div class="stat"><span class="stat-label">{labels.get("column.std", "Std")}</span><span class="stat-value">{self._format_number(dist.get("std"))}</span></div>
                     </div>
                 '''
 
@@ -258,15 +266,15 @@ class ColumnsSection(BaseSectionRenderer):
                     </div>
                     <div class="column-metrics">
                         <div class="metric-mini {quality_class}">
-                            <span class="metric-label">Null</span>
+                            <span class="metric-label">{labels.get("column.null", "Null")}</span>
                             <span class="metric-value">{null_ratio:.1%}</span>
                         </div>
                         <div class="metric-mini">
-                            <span class="metric-label">Unique</span>
+                            <span class="metric-label">{labels.get("column.unique", "Unique")}</span>
                             <span class="metric-value">{unique_ratio:.1%}</span>
                         </div>
                         <div class="metric-mini">
-                            <span class="metric-label">Distinct</span>
+                            <span class="metric-label">{labels.get("column.distinct", "Distinct")}</span>
                             <span class="metric-value">{distinct:,}</span>
                         </div>
                     </div>
@@ -329,7 +337,7 @@ class QualitySection(BaseSectionRenderer):
         theme: ThemeConfig,
     ) -> str:
         charts_html = self._render_charts(spec.charts, chart_renderer)
-        metrics_html = self._render_quality_metrics(spec.metrics)
+        metrics_html = self._render_quality_metrics(spec.metrics, spec.metadata.get("labels", {}))
         alerts_html = self._render_alerts(spec.alerts, theme)
 
         return f'''
@@ -347,17 +355,18 @@ class QualitySection(BaseSectionRenderer):
 </section>
 '''
 
-    def _render_quality_metrics(self, metrics: dict[str, Any]) -> str:
+    def _render_quality_metrics(self, metrics: dict[str, Any], labels: dict[str, str] | None = None) -> str:
         """Render quality score gauges and metrics."""
         if not metrics:
             return ""
 
+        labels = labels or {}
         scores = []
         quality_dimensions = [
-            ("completeness", "Completeness", "Measures data completeness"),
-            ("uniqueness", "Uniqueness", "Measures unique value ratio"),
-            ("validity", "Validity", "Measures data format validity"),
-            ("consistency", "Consistency", "Measures data consistency"),
+            ("completeness", labels.get("quality.completeness", "Completeness"), labels.get("quality.completeness.desc", "Measures data completeness")),
+            ("uniqueness", labels.get("quality.uniqueness", "Uniqueness"), labels.get("quality.uniqueness.desc", "Measures unique value ratio")),
+            ("validity", labels.get("quality.validity", "Validity"), labels.get("quality.validity.desc", "Measures data format validity")),
+            ("consistency", labels.get("quality.consistency", "Consistency"), labels.get("quality.consistency.desc", "Measures data consistency")),
         ]
 
         for key, label, desc in quality_dimensions:
@@ -400,8 +409,9 @@ class PatternsSection(BaseSectionRenderer):
         chart_renderer: BaseChartRenderer,
         theme: ThemeConfig,
     ) -> str:
-        patterns_html = self._render_patterns_list(spec.metadata.get("patterns", []))
-        tables_html = self._render_patterns_table(spec.tables)
+        labels = spec.metadata.get("labels", {})
+        patterns_html = self._render_patterns_list(spec.metadata.get("patterns", []), labels)
+        tables_html = self._render_patterns_table(spec.tables, labels)
 
         return f'''
 <section class="report-section section-patterns" id="section-patterns">
@@ -417,10 +427,11 @@ class PatternsSection(BaseSectionRenderer):
 </section>
 '''
 
-    def _render_patterns_list(self, patterns: list[dict[str, Any]]) -> str:
+    def _render_patterns_list(self, patterns: list[dict[str, Any]], labels: dict[str, str] | None = None) -> str:
         """Render patterns as a visual list."""
+        labels = labels or {}
         if not patterns:
-            return '<p class="no-data">No patterns detected</p>'
+            return f'<p class="no-data">{labels.get("patterns.none", "No patterns detected")}</p>'
 
         items = []
         for p in patterns:
@@ -434,7 +445,7 @@ class PatternsSection(BaseSectionRenderer):
             samples_html = ""
             if samples:
                 sample_items = ", ".join(f'<code>{s}</code>' for s in samples)
-                samples_html = f'<div class="pattern-samples">Examples: {sample_items}</div>'
+                samples_html = f'<div class="pattern-samples">{labels.get("patterns.examples", "Examples")}: {sample_items}</div>'
 
             items.append(f'''
                 <div class="pattern-item">
@@ -449,15 +460,21 @@ class PatternsSection(BaseSectionRenderer):
 
         return f'<div class="patterns-list">{"".join(items)}</div>'
 
-    def _render_patterns_table(self, tables: list[dict[str, Any]]) -> str:
+    def _render_patterns_table(self, tables: list[dict[str, Any]], labels: dict[str, str] | None = None) -> str:
         """Render patterns as a table."""
+        labels = labels or {}
         if not tables:
             return ""
 
         html_parts = []
         for table in tables:
             title = table.get("title", "")
-            headers = table.get("headers", ["Column", "Pattern", "Match Rate", "Samples"])
+            headers = table.get("headers", [
+                labels.get("patterns.column", "Column"),
+                labels.get("patterns.pattern", "Pattern"),
+                labels.get("patterns.match_rate", "Match Rate"),
+                labels.get("patterns.samples", "Samples"),
+            ])
             rows = table.get("rows", [])
 
             if not rows:
@@ -535,7 +552,10 @@ class CorrelationsSection(BaseSectionRenderer):
         theme: ThemeConfig,
     ) -> str:
         charts_html = self._render_charts(spec.charts, chart_renderer)
-        correlations_html = self._render_correlations_list(spec.metadata.get("correlations", []))
+        correlations_html = self._render_correlations_list(
+            spec.metadata.get("correlations", []),
+            spec.metadata.get("labels", {}),
+        )
 
         return f'''
 <section class="report-section section-correlations" id="section-correlations">
@@ -551,10 +571,15 @@ class CorrelationsSection(BaseSectionRenderer):
 </section>
 '''
 
-    def _render_correlations_list(self, correlations: list[tuple[str, str, float]]) -> str:
+    def _render_correlations_list(
+        self,
+        correlations: list[tuple[str, str, float]],
+        labels: dict[str, str] | None = None,
+    ) -> str:
         """Render significant correlations as a list."""
+        labels = labels or {}
         if not correlations:
-            return '<p class="no-data">No significant correlations found</p>'
+            return f'<p class="no-data">{labels.get("correlations.none", "No significant correlations found")}</p>'
 
         items = []
         for col1, col2, corr in correlations:
@@ -590,8 +615,9 @@ class RecommendationsSection(BaseSectionRenderer):
         chart_renderer: BaseChartRenderer,
         theme: ThemeConfig,
     ) -> str:
-        recommendations_html = self._render_recommendations(spec.text_blocks)
-        validators_html = self._render_suggested_validators(spec.metadata.get("validators", []))
+        labels = spec.metadata.get("labels", {})
+        recommendations_html = self._render_recommendations(spec.text_blocks, labels)
+        validators_html = self._render_suggested_validators(spec.metadata.get("validators", []), labels)
 
         return f'''
 <section class="report-section section-recommendations" id="section-recommendations">
@@ -607,16 +633,26 @@ class RecommendationsSection(BaseSectionRenderer):
 </section>
 '''
 
-    def _render_recommendations(self, recommendations: list[str]) -> str:
+    def _render_recommendations(
+        self,
+        recommendations: list[str],
+        labels: dict[str, str] | None = None,
+    ) -> str:
         """Render recommendations list."""
+        labels = labels or {}
         if not recommendations:
-            return '<p class="no-data">No specific recommendations at this time</p>'
+            return f'<p class="no-data">{labels.get("recommendations.none", "No specific recommendations at this time")}</p>'
 
         items = "".join(f'<li class="recommendation-item">{r}</li>' for r in recommendations)
         return f'<ul class="recommendations-list">{items}</ul>'
 
-    def _render_suggested_validators(self, validators: list[dict[str, Any]]) -> str:
+    def _render_suggested_validators(
+        self,
+        validators: list[dict[str, Any]],
+        labels: dict[str, str] | None = None,
+    ) -> str:
         """Render suggested validators."""
+        labels = labels or {}
         if not validators:
             return ""
 
@@ -637,7 +673,7 @@ class RecommendationsSection(BaseSectionRenderer):
 
         return f'''
             <div class="validators-section">
-                <h4>Suggested Validators</h4>
+                <h4>{labels.get("recommendations.validators", "Suggested Validators")}</h4>
                 <div class="validators-list">{"".join(items)}</div>
             </div>
         '''

@@ -55,5 +55,5 @@ observation만 포함할 수 있으므로 전체 산출물 원천으로 쓰지 �
 - [Core 시작하기](getting-started/index.md)
 - [Truthound AI](ai/index.md)
 - [Truthound Orchestration](orchestration/index.md)
-- [릴리스 노트](releases/truthound-3.1.8.md)
+- [릴리스 노트](releases/truthound-3.1.9.md)
 - [3.0 마이그레이션](guides/migration-3.0.md)

@@ -15,6 +15,16 @@ html = generate_html_report(
     output_path="report.html",
 )
 
+# 한국어 공공/연구 보고서 라벨
+html = generate_html_report(
+    profile=profile_dict,
+    title="데이터 품질 분석 보고서",
+    subtitle="한국 공공·연구용 A4 보고서",
+    theme="light",
+    language="ko",
+    output_path="report-ko.html",
+)
+
 # Generate from file
 from truthound.datadocs import generate_report_from_file
 
@@ -44,6 +54,11 @@ html = builder.build(
 )
 builder.save(html, "report.html")
 ```
+
+한국어 보고서가 필요하면 `HTMLReportBuilder` 또는 `generate_html_report`에
+`language="ko"`를 전달합니다. 이 옵션은 목차, 섹션 제목, 지표 라벨, 표 header,
+차트 제목, footer 문구, PDF 표지 metadata를 한국어로 렌더링합니다. 사용자가
+전달한 보고서 제목과 원본 컬럼명은 그대로 유지됩니다.
 
 ### Detailed 설정 with ReportConfig
 

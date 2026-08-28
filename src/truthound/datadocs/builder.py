@@ -30,6 +30,7 @@ from truthound.datadocs.base import (
 )
 from truthound.datadocs.themes import get_theme, THEMES
 from truthound.datadocs.charts import get_chart_renderer, CDN_URLS
+from truthound.datadocs.i18n import get_catalog
 from truthound.datadocs.sections import get_section_renderer
 from truthound.datadocs.styles import get_complete_stylesheet
 
@@ -121,7 +122,7 @@ class ProfileDataConverter:
         """Get formatted column data."""
         return self.data.get("columns", [])
 
-    def get_type_distribution(self) -> ChartSpec:
+    def get_type_distribution(self, title: str = "Data Types Distribution") -> ChartSpec:
         """Get chart spec for data type distribution."""
         columns = self.data.get("columns", [])
         type_counts: dict[str, int] = {}
@@ -132,13 +133,13 @@ class ProfileDataConverter:
 
         return ChartSpec(
             chart_type=ChartType.DONUT,
-            title="Data Types Distribution",
+            title=title,
             labels=list(type_counts.keys()),
             values=list(type_counts.values()),
             height=300,
         )
 
-    def get_null_distribution(self) -> ChartSpec:
+    def get_null_distribution(self, title: str = "Top Columns by Missing Values") -> ChartSpec:
         """Get chart spec for null value distribution."""
         columns = self.data.get("columns", [])
 
@@ -151,13 +152,13 @@ class ProfileDataConverter:
 
         return ChartSpec(
             chart_type=ChartType.HORIZONTAL_BAR,
-            title="Top Columns by Missing Values",
+            title=title,
             labels=[c[0] for c in sorted_cols],
             values=[c[1] * 100 for c in sorted_cols],
             height=300,
         )
 
-    def get_uniqueness_distribution(self) -> ChartSpec:
+    def get_uniqueness_distribution(self, title: str = "Top Columns by Uniqueness") -> ChartSpec:
         """Get chart spec for uniqueness distribution."""
         columns = self.data.get("columns", [])
 
@@ -170,7 +171,7 @@ class ProfileDataConverter:
 
         return ChartSpec(
             chart_type=ChartType.HORIZONTAL_BAR,
-            title="Top Columns by Uniqueness",
+            title=title,
             labels=[c[0] for c in sorted_cols],
             values=[c[1] * 100 for c in sorted_cols],
             height=300,
@@ -261,23 +262,29 @@ class ProfileDataConverter:
 
         return alerts
 
-    def get_recommendations(self) -> list[str]:
+    def get_recommendations(self, *, language: str = "en") -> list[str]:
         """Generate recommendations based on profile data."""
         recommendations = []
+        ko = language.startswith("ko")
 
         for col in self.data.get("columns", []):
             validators = col.get("suggested_validators", [])
             for v in validators[:2]:  # Limit per column
-                recommendations.append(
-                    f"Add {v} validator for column '{col.get('name', '')}'"
-                )
+                name = col.get("name", "")
+                if ko:
+                    recommendations.append(f"'{name}' 컬럼에 {v} 검증 규칙을 추가하세요")
+                else:
+                    recommendations.append(f"Add {v} validator for column '{name}'")
 
         # General recommendations
         dup_ratio = self.data.get("duplicate_row_ratio", 0)
         if dup_ratio > 0.05:
-            recommendations.append(
-                "Consider implementing duplicate row detection in your data pipeline"
-            )
+            if ko:
+                recommendations.append("데이터 파이프라인에 중복 행 탐지 절차를 추가하는 것을 검토하세요")
+            else:
+                recommendations.append(
+                    "Consider implementing duplicate row detection in your data pipeline"
+                )
 
         # Check for high null columns
         high_null_cols = [
@@ -286,9 +293,13 @@ class ProfileDataConverter:
             if c.get("null_ratio", 0) > 0.3
         ]
         if high_null_cols:
-            recommendations.append(
-                f"Review data collection for columns with high missing values: {', '.join(high_null_cols[:3])}"
-            )
+            columns = ", ".join(high_null_cols[:3])
+            if ko:
+                recommendations.append(f"결측값 비율이 높은 컬럼의 수집 절차를 점검하세요: {columns}")
+            else:
+                recommendations.append(
+                    f"Review data collection for columns with high missing values: {columns}"
+                )
 
         return recommendations[:10]  # Limit recommendations
 
@@ -310,6 +321,7 @@ class HTMLReportBuilder:
         theme: ReportTheme | str = ReportTheme.LIGHT,
         config: ReportConfig | None = None,
         *,
+        language: str | None = None,
         _use_svg: bool = False,
     ) -> None:
         """Initialize the report builder.
@@ -317,21 +329,77 @@ class HTMLReportBuilder:
         Args:
             theme: Report theme to use
             config: Optional full configuration
+            language: Optional locale override (e.g. "ko")
             _use_svg: Internal flag for PDF export (uses SVG renderer)
         """
         if config:
             self.config = config
+            if language:
+                self.config.language = language
             self._theme_config = self.config.custom_theme or get_theme(self.config.theme)
             if not self.config.custom_theme:
                 self.config.theme = ReportTheme(self._theme_config.name)
         else:
             self._theme_config = get_theme(theme)
-            self.config = ReportConfig(theme=ReportTheme(self._theme_config.name))
+            self.config = ReportConfig(
+                theme=ReportTheme(self._theme_config.name),
+                language=language or "en",
+            )
 
         self._use_svg = _use_svg
         # Use SVG for PDF, ApexCharts for HTML
         chart_lib = ChartLibrary.SVG if _use_svg else ChartLibrary.APEXCHARTS
         self._chart_renderer = get_chart_renderer(chart_lib)
+        if self.config.language.startswith("ko") and self.config.footer_text == "Generated by Truthound":
+            self.config.footer_text = self._label(
+                "report.generated_by_framework",
+                "Truthound 데이터 품질 프레임워크에서 생성",
+            )
+
+    def _label(self, key: str, default: str, **params: Any) -> str:
+        catalog = get_catalog(self.config.language)
+        return catalog.get(key, default, **params)
+
+    def _labels(self) -> dict[str, str]:
+        return {
+            "overview.row_count": self._label("stats.rows", "Rows"),
+            "overview.column_count": self._label("stats.columns", "Columns"),
+            "overview.memory_bytes": self._label("stats.memory", "Memory"),
+            "overview.duplicate_rows": self._label("stats.duplicates", "Duplicates"),
+            "overview.null_cells": self._label("stats.missing", "Missing"),
+            "overview.quality_score": self._label("stats.quality", "Quality"),
+            "overview.row_count.desc": self._label("stats.rows.desc", "Total number of rows"),
+            "overview.column_count.desc": self._label("stats.columns.desc", "Total number of columns"),
+            "overview.memory_bytes.desc": self._label("stats.memory.desc", "Estimated memory size"),
+            "overview.duplicate_rows.desc": self._label("stats.duplicates.desc", "Duplicate row count"),
+            "overview.null_cells.desc": self._label("stats.missing.desc", "Total null cells"),
+            "overview.quality_score.desc": self._label("stats.quality.desc", "Overall data quality"),
+            "column.null": self._label("stats.null", "Null"),
+            "column.unique": self._label("stats.unique", "Unique"),
+            "column.distinct": self._label("stats.distinct", "Distinct"),
+            "column.unknown": self._label("common.unknown", "Unknown"),
+            "column.min": self._label("stats.min.short", "Min"),
+            "column.max": self._label("stats.max.short", "Max"),
+            "column.mean": self._label("stats.mean", "Mean"),
+            "column.std": self._label("stats.std.short", "Std"),
+            "quality.completeness": self._label("quality.completeness", "Completeness"),
+            "quality.uniqueness": self._label("quality.uniqueness", "Uniqueness"),
+            "quality.validity": self._label("quality.validity", "Validity"),
+            "quality.consistency": self._label("quality.consistency", "Consistency"),
+            "quality.completeness.desc": self._label("quality.completeness.desc", "Measures data completeness"),
+            "quality.uniqueness.desc": self._label("quality.uniqueness.desc", "Measures unique value ratio"),
+            "quality.validity.desc": self._label("quality.validity.desc", "Measures data format validity"),
+            "quality.consistency.desc": self._label("quality.consistency.desc", "Measures data consistency"),
+            "patterns.none": self._label("patterns.none", "No patterns detected"),
+            "patterns.examples": self._label("patterns.examples", "Examples"),
+            "patterns.column": self._label("table.column", "Column"),
+            "patterns.pattern": self._label("table.pattern", "Pattern"),
+            "patterns.match_rate": self._label("table.match_rate", "Match Rate"),
+            "patterns.samples": self._label("table.samples", "Samples"),
+            "correlations.none": self._label("correlations.none", "No significant correlations found"),
+            "recommendations.none": self._label("recommendations.none", "No specific recommendations at this time"),
+            "recommendations.validators": self._label("recommendations.validators", "Suggested Validators"),
+        }
 
     def build(
         self,
@@ -443,12 +511,13 @@ class HTMLReportBuilder:
         if section_type == SectionType.OVERVIEW:
             return SectionSpec(
                 section_type=section_type,
-                title="Overview",
-                subtitle="Dataset summary and key metrics",
+                title=self._label("section.overview", "Overview"),
+                subtitle=self._label("section.overview.subtitle", "Dataset summary and key metrics"),
                 metrics=converter.get_overview_metrics(),
                 charts=[
-                    converter.get_type_distribution(),
+                    converter.get_type_distribution(self._label("chart.data_types", "Data Types Distribution")),
                 ],
+                metadata={"labels": self._labels()},
             )
 
         elif section_type == SectionType.QUALITY:
@@ -462,17 +531,18 @@ class HTMLReportBuilder:
 
             return SectionSpec(
                 section_type=section_type,
-                title="Data Quality",
-                subtitle="Quality metrics and assessments",
+                title=self._label("section.quality", "Data Quality"),
+                subtitle=self._label("section.quality.subtitle", "Quality metrics and assessments"),
                 metrics={
                     "overall": quality_score,
                     "completeness": completeness,
                     "uniqueness": min(uniqueness, 100),
                 },
                 charts=[
-                    converter.get_null_distribution(),
+                    converter.get_null_distribution(self._label("chart.missing_values", "Top Columns by Missing Values")),
                 ],
                 alerts=converter.get_alerts(),
+                metadata={"labels": self._labels()},
             )
 
         elif section_type == SectionType.COLUMNS:
@@ -480,8 +550,14 @@ class HTMLReportBuilder:
 
             # Build summary table
             table = {
-                "title": "Column Summary",
-                "headers": ["Column", "Type", "Null %", "Unique %", "Distinct"],
+                "title": self._label("table.column_summary", "Column Summary"),
+                "headers": [
+                    self._label("table.column", "Column"),
+                    self._label("table.type", "Type"),
+                    self._label("table.null_percent", "Null %"),
+                    self._label("table.unique_percent", "Unique %"),
+                    self._label("table.distinct", "Distinct"),
+                ],
                 "rows": [
                     [
                         c.get("name", ""),
@@ -496,49 +572,51 @@ class HTMLReportBuilder:
 
             return SectionSpec(
                 section_type=section_type,
-                title="Column Details",
-                subtitle=f"{len(columns)} columns analyzed",
+                title=self._label("section.columns", "Column Details"),
+                subtitle=self._label("section.columns.subtitle", "{count} columns analyzed", count=len(columns)),
                 tables=[table],
-                metadata={"columns": columns},
+                metadata={"columns": columns, "labels": self._labels()},
             )
 
         elif section_type == SectionType.PATTERNS:
             patterns = converter.get_patterns()
             return SectionSpec(
                 section_type=section_type,
-                title="Detected Patterns",
-                subtitle="Automatically detected data patterns",
-                metadata={"patterns": patterns},
+                title=self._label("section.patterns", "Detected Patterns"),
+                subtitle=self._label("section.patterns.subtitle", "Automatically detected data patterns"),
+                metadata={"patterns": patterns, "labels": self._labels()},
                 visible=len(patterns) > 0,
             )
 
         elif section_type == SectionType.DISTRIBUTION:
             return SectionSpec(
                 section_type=section_type,
-                title="Value Distribution",
-                subtitle="Distribution analysis across columns",
+                title=self._label("section.distribution", "Value Distribution"),
+                subtitle=self._label("section.distribution.subtitle", "Distribution analysis across columns"),
                 charts=[
-                    converter.get_uniqueness_distribution(),
+                    converter.get_uniqueness_distribution(self._label("chart.uniqueness", "Top Columns by Uniqueness")),
                 ],
+                metadata={"labels": self._labels()},
             )
 
         elif section_type == SectionType.CORRELATIONS:
             correlations = converter.get_correlations()
             return SectionSpec(
                 section_type=section_type,
-                title="Correlations",
-                subtitle="Column relationships and correlations",
-                metadata={"correlations": correlations},
+                title=self._label("section.correlations", "Correlations"),
+                subtitle=self._label("section.correlations.subtitle", "Column relationships and correlations"),
+                metadata={"correlations": correlations, "labels": self._labels()},
                 visible=len(correlations) > 0,
             )
 
         elif section_type == SectionType.RECOMMENDATIONS:
-            recommendations = converter.get_recommendations()
+            recommendations = converter.get_recommendations(language=self.config.language)
             return SectionSpec(
                 section_type=section_type,
-                title="Recommendations",
-                subtitle="Suggested improvements and validations",
+                title=self._label("section.recommendations", "Recommendations"),
+                subtitle=self._label("section.recommendations.subtitle", "Suggested improvements and validations"),
                 text_blocks=recommendations,
+                metadata={"labels": self._labels()},
                 visible=len(recommendations) > 0,
             )
 
@@ -546,9 +624,10 @@ class HTMLReportBuilder:
             alerts = converter.get_alerts()
             return SectionSpec(
                 section_type=section_type,
-                title="Alerts",
-                subtitle="Data quality issues and warnings",
+                title=self._label("section.alerts", "Alerts"),
+                subtitle=self._label("section.alerts.subtitle", "Data quality issues and warnings"),
                 alerts=alerts,
+                metadata={"labels": self._labels()},
                 visible=len(alerts) > 0,
             )
 
@@ -605,7 +684,7 @@ class HTMLReportBuilder:
                     )
                 toc_html = f'''
                     <section class="report-toc-professional">
-                        <h2 class="toc-title-professional">Table of Contents</h2>
+                        <h2 class="toc-title-professional">{self._label("report.toc", "Table of Contents")}</h2>
                         <table class="toc-table">
                             <tbody>{"".join(toc_items)}</tbody>
                         </table>
@@ -621,7 +700,7 @@ class HTMLReportBuilder:
                     )
                 toc_html = f'''
                     <nav class="report-toc">
-                        <h3 class="toc-title">Contents</h3>
+                        <h3 class="toc-title">{self._label("report.contents", "Contents")}</h3>
                         <ul class="toc-list">{"".join(toc_items)}</ul>
                     </nav>
                 '''
@@ -649,18 +728,18 @@ class HTMLReportBuilder:
                         <div class="cover-divider"></div>
                         <div class="cover-meta">
                             <div class="cover-meta-item">
-                                <span class="cover-meta-label">Report Date</span>
-                                <span class="cover-meta-value">{spec.metadata.created_at.strftime("%B %d, %Y")}</span>
+                                <span class="cover-meta-label">{self._label("report.date", "Report Date")}</span>
+                                <span class="cover-meta-value">{spec.metadata.created_at.strftime(spec.config.date_format)}</span>
                             </div>
-                            {f'<div class="cover-meta-item"><span class="cover-meta-label">Data Source</span><span class="cover-meta-value">{html.escape(spec.metadata.data_source)}</span></div>' if spec.metadata.data_source else ''}
+                            {f'<div class="cover-meta-item"><span class="cover-meta-label">{self._label("report.data_source", "Data Source")}</span><span class="cover-meta-value">{html.escape(spec.metadata.data_source)}</span></div>' if spec.metadata.data_source else ''}
                             <div class="cover-meta-item">
-                                <span class="cover-meta-label">Dataset Size</span>
-                                <span class="cover-meta-value">{row_count:,} rows × {column_count} columns</span>
+                                <span class="cover-meta-label">{self._label("report.dataset_size", "Dataset Size")}</span>
+                                <span class="cover-meta-value">{self._label("report.dataset_size.value", "{rows:,} rows × {columns} columns", rows=row_count, columns=column_count)}</span>
                             </div>
                         </div>
                     </div>
                     <div class="cover-footer">
-                        <p class="cover-generator">Generated by Truthound Data Quality Framework</p>
+                        <p class="cover-generator">{self._label("report.generated_by_framework", "Generated by Truthound Data Quality Framework")}</p>
                         <p class="cover-timestamp">{spec.metadata.created_at.strftime("%Y-%m-%d %H:%M:%S")}</p>
                     </div>
                 </section>
@@ -678,11 +757,11 @@ class HTMLReportBuilder:
             meta_items = []
             if spec.config.include_timestamp:
                 meta_items.append(
-                    f'<span class="report-meta-item">Generated: {spec.metadata.created_at.strftime(spec.config.date_format)}</span>'
+                    f'<span class="report-meta-item">{self._label("report.generated_at", "Generated at")}: {spec.metadata.created_at.strftime(spec.config.date_format)}</span>'
                 )
             if spec.metadata.data_source:
                 meta_items.append(
-                    f'<span class="report-meta-item">Source: {html.escape(spec.metadata.data_source)}</span>'
+                    f'<span class="report-meta-item">{self._label("report.data_source", "Source")}: {html.escape(spec.metadata.data_source)}</span>'
                 )
 
             header_html = f'''
@@ -706,7 +785,7 @@ class HTMLReportBuilder:
                     <footer class="report-footer-professional">
                         <div class="footer-line"></div>
                         <p class="footer-text">{html.escape(spec.config.footer_text)}</p>
-                        <p class="footer-disclaimer">This report was automatically generated and should be reviewed for accuracy.</p>
+                        <p class="footer-disclaimer">{self._label("report.disclaimer", "This report was automatically generated and should be reviewed for accuracy.")}</p>
                     </footer>
                 '''
             else:
@@ -734,7 +813,7 @@ class HTMLReportBuilder:
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{html.escape(spec.metadata.title)}</title>
-    <meta name="description" content="{html.escape(spec.metadata.description or 'Data Profile Report')}">
+    <meta name="description" content="{html.escape(spec.metadata.description or self._label("report.profile_description", "Data Profile Report"))}">
     <meta name="generator" content="Truthound">
     <style>
 {css}
@@ -1051,6 +1130,7 @@ def generate_html_report(
     subtitle: str = "",
     theme: ReportTheme | str = ReportTheme.LIGHT,
     output_path: str | Path | None = None,
+    language: str = "en",
 ) -> str:
     """Generate an HTML report from profile data.
 
@@ -1062,11 +1142,12 @@ def generate_html_report(
         subtitle: Report subtitle
         theme: Report theme
         output_path: Optional path to save the report
+        language: Report locale
 
     Returns:
         HTML content as string
     """
-    builder = HTMLReportBuilder(theme=theme)
+    builder = HTMLReportBuilder(theme=theme, language=language)
     html_content = builder.build(profile, title=title, subtitle=subtitle)
 
     if output_path:
@@ -1080,6 +1161,7 @@ def generate_report_from_file(
     output_path: str | Path | None = None,
     title: str = "Data Profile Report",
     theme: ReportTheme | str = ReportTheme.LIGHT,
+    language: str = "en",
 ) -> str:
     """Generate an HTML report from a profile JSON file.
 
@@ -1088,6 +1170,7 @@ def generate_report_from_file(
         output_path: Optional path to save the report
         title: Report title
         theme: Report theme
+        language: Report locale
 
     Returns:
         HTML content as string
@@ -1104,6 +1187,7 @@ def generate_report_from_file(
         title=title,
         theme=theme,
         output_path=output_path,
+        language=language,
     )
 
 
@@ -1213,6 +1297,7 @@ def export_to_pdf(
     title: str = "Data Profile Report",
     subtitle: str = "",
     theme: ReportTheme | str = ReportTheme.LIGHT,
+    language: str = "en",
 ) -> Path:
     """Export report to PDF with professional document formatting.
 
@@ -1234,6 +1319,7 @@ def export_to_pdf(
         title: Report title
         subtitle: Report subtitle
         theme: Report theme
+        language: Report locale
 
     Returns:
         Path to PDF file
@@ -1249,7 +1335,7 @@ def export_to_pdf(
     output_path = Path(output_path)
 
     # Use SVG renderer for PDF (no JavaScript)
-    builder = HTMLReportBuilder(theme=theme, _use_svg=True)
+    builder = HTMLReportBuilder(theme=theme, language=language, _use_svg=True)
 
     # Build HTML with professional PDF formatting
     html_content = builder.build_for_pdf(profile, title=title, subtitle=subtitle)

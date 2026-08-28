@@ -335,6 +335,7 @@ def export_to_pdf(
     title: str = "Data Profile Report",
     subtitle: str = "",
     theme: ReportTheme | str = ReportTheme.LIGHT,
+    language: str = "en",
 ) -> Path:
     """
     Export profile to PDF.
@@ -345,6 +346,7 @@ def export_to_pdf(
         title: Report title
         subtitle: Subtitle
         theme: Theme
+        language: 보고서 locale. 한국어 라벨은 "ko"를 사용합니다.
 
     Returns:
         PDF file path
