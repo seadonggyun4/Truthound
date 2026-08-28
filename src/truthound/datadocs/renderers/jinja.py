@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, TYPE_CHECKING
 
 from truthound.datadocs.renderers.base import BaseRenderer, RenderResult
+from truthound.datadocs.styles import get_complete_stylesheet
 
 if TYPE_CHECKING:
     from truthound.datadocs.engine.context import ReportContext
@@ -647,8 +648,11 @@ body {
             "locale": ctx.locale,
             "theme_name": theme_name,
             # Styling
-            "theme_css": theme_css,
-            "base_css": self.DEFAULT_CSS,
+            "theme_css": "",
+            "base_css": get_complete_stylesheet(
+                theme_css,
+                is_dark=theme_name == "dark",
+            ),
             "custom_css": self._custom_css,
             # Layout options
             "show_header": self._show_header,

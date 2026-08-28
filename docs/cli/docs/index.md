@@ -88,11 +88,9 @@ Chart library selection is automatic:
 
 | Theme | Description |
 |-------|-------------|
-| `light` | Clean, bright style |
-| `dark` | Dark mode, reduced eye strain |
-| `professional` | Corporate style (default) |
-| `minimal` | Minimalist design |
-| `modern` | Vibrant gradients |
+| `light` | Korean public/research A4 report style (default) |
+| `dark` | Dark report style with the same A4 structure |
+| `minimal` | Low-chroma formal A4 report style |
 
 ## Use Cases
 
@@ -103,7 +101,7 @@ Chart library selection is automatic:
 - name: Generate Data Report
   run: |
     truthound profile data.csv --format json -o profile.json
-    truthound docs generate profile.json -o report.html --theme professional
+    truthound docs generate profile.json -o report.html --theme light
 
 - name: Upload Report
   uses: actions/upload-artifact@v4
@@ -124,7 +122,7 @@ truthound docs generate profile.json -o "report_$(date +%Y%m%d).html" --title "D
 
 ```bash
 # Generate PDF for email
-truthound docs generate profile.json -o report.pdf --format pdf --theme professional
+truthound docs generate profile.json -o report.pdf --format pdf --theme light
 ```
 
 ## Next Steps

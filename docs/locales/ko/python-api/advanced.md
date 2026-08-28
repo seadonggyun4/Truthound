@@ -899,7 +899,7 @@ from truthound.datadocs.themes import ThemeConfig
 
 # Use built-in theme
 builder = datadocs.HTMLReportBuilder(
-    theme=datadocs.ReportTheme.PROFESSIONAL,
+    theme=datadocs.ReportTheme.LIGHT,
 )
 
 # Custom theme

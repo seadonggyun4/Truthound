@@ -26,7 +26,7 @@ class ValidationDataConverter:
         *,
         title: str = "Truthound Validation Data Docs",
         subtitle: str = "",
-        theme: str = "professional",
+        theme: str = "light",
         locale: str = "en",
     ) -> ReportContext:
         """Build the shared immutable ReportContext."""
@@ -145,9 +145,9 @@ class ValidationDataConverter:
 class ValidationDocsBuilder:
     """Build validation Data Docs from ValidationRunResult."""
 
-    def __init__(self, theme: ReportTheme | str = ReportTheme.PROFESSIONAL) -> None:
-        self.theme = ReportTheme(theme) if isinstance(theme, str) else theme
-        self._theme_config = get_theme(self.theme)
+    def __init__(self, theme: ReportTheme | str = ReportTheme.LIGHT) -> None:
+        self._theme_config = get_theme(theme)
+        self.theme = self._theme_config.name
 
     def build(
         self,
@@ -160,7 +160,7 @@ class ValidationDocsBuilder:
         context = converter.build_context(
             title=title,
             subtitle=subtitle,
-            theme=self.theme.value,
+            theme=self.theme,
         )
         return self._render_html(context)
 
@@ -175,7 +175,7 @@ class ValidationDocsBuilder:
         sections = context.data.sections
         css = get_complete_stylesheet(
             self._theme_config.to_css_vars(),
-            is_dark=self.theme == ReportTheme.DARK,
+            is_dark=self.theme == ReportTheme.DARK.value,
         )
         overview = sections["overview"]
         checks = sections["checks"]["rows"]
@@ -195,109 +195,173 @@ class ValidationDocsBuilder:
 body {{
   background: var(--color-background);
   color: var(--color-text-primary);
-  font-family: var(--font-family-sans);
+  font-family: var(--font-family);
   margin: 0;
-  padding: 2rem;
+  padding: 10mm 0;
 }}
 .container {{
-  max-width: 1200px;
+  width: 210mm;
+  max-width: 210mm;
+  min-height: 297mm;
   margin: 0 auto;
-}}
-.hero, .panel {{
+  padding: 20mm 18mm 16mm;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-md);
-  margin-bottom: 1.5rem;
-  padding: 1.5rem;
+  box-shadow: 0 2mm 10mm var(--color-shadow);
+}}
+.hero, .panel {{
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  margin-bottom: 9mm;
+  padding: 0;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}}
+.hero {{
+  border-bottom: 2pt solid var(--color-primary);
+  padding-bottom: 5mm;
 }}
 .hero h1 {{
-  margin: 0 0 0.5rem;
+  color: var(--color-primary);
+  font-size: var(--font-size-3xl);
+  margin: 0 0 2mm;
+}}
+.panel h2 {{
+  color: var(--color-primary);
+  font-size: var(--font-size-xl);
+  border-bottom: 1.2pt solid var(--color-primary);
+  padding-bottom: 2mm;
+  margin-bottom: 4mm;
+}}
+.panel h2::before {{
+  content: "□ ";
 }}
 .muted {{
   color: var(--color-text-secondary);
 }}
 .badge {{
-  border-radius: 999px;
+  border-radius: var(--border-radius-sm);
   display: inline-block;
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
   font-weight: 700;
-  margin-top: 0.75rem;
-  padding: 0.35rem 0.75rem;
+  margin-top: 3mm;
+  padding: 1.5mm 3mm;
 }}
 .badge.success {{
   background: rgba(34, 197, 94, 0.15);
-  color: #166534;
+  color: var(--color-success);
 }}
 .badge.failure {{
   background: rgba(239, 68, 68, 0.15);
-  color: #991b1b;
+  color: var(--color-error);
 }}
 .metrics {{
   display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 3mm;
+  grid-template-columns: repeat(auto-fit, minmax(34mm, 1fr));
+  margin-bottom: 4mm;
 }}
 .metric {{
-  background: var(--color-background-secondary);
+  background: rgba(31, 78, 121, 0.06);
+  border: 0.6pt solid var(--color-border);
   border-radius: var(--border-radius-md);
-  padding: 1rem;
+  padding: 3mm;
 }}
 .metric-label {{
   color: var(--color-text-secondary);
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
 }}
 .metric-value {{
-  font-size: 1.4rem;
+  color: var(--color-primary);
+  font-size: var(--font-size-xl);
   font-weight: 700;
-  margin-top: 0.25rem;
+  margin-top: 1mm;
 }}
 table {{
+  border-top: 1pt solid var(--color-primary);
+  border-left: 0.5pt solid var(--color-border);
   border-collapse: collapse;
   width: 100%;
+  font-size: var(--font-size-sm);
 }}
 th, td {{
-  border-bottom: 1px solid var(--color-border);
-  padding: 0.75rem;
+  border-right: 0.5pt solid var(--color-border);
+  border-bottom: 0.5pt solid var(--color-border);
+  padding: 2mm 2.5mm;
   text-align: left;
   vertical-align: top;
 }}
 th {{
-  color: var(--color-text-secondary);
-  font-size: 0.8rem;
-  text-transform: uppercase;
+  background: var(--color-primary);
+  color: #ffffff;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-align: center;
 }}
 .severity-bar {{
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 1rem;
+  gap: 2mm;
+  margin-top: 3mm;
 }}
 .severity-pill {{
-  background: var(--color-background-secondary);
-  border-radius: 999px;
-  padding: 0.35rem 0.75rem;
+  background: var(--color-surface);
+  border: 0.5pt solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  padding: 1.5mm 3mm;
 }}
 .alerts {{
   display: grid;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  gap: 3mm;
+  margin-bottom: 6mm;
 }}
 .alert {{
   background: rgba(245, 158, 11, 0.12);
-  border-left: 4px solid #f59e0b;
+  border-left: 3pt solid var(--color-warning);
   border-radius: var(--border-radius-md);
-  padding: 1rem;
+  padding: 3mm 4mm;
+  break-inside: avoid;
 }}
 code {{
   font-family: var(--font-family-mono);
 }}
+@page {{
+  size: A4 portrait;
+  margin: 16mm 14mm;
+}}
+@media print {{
+  body {{
+    background: white;
+    padding: 0;
+  }}
+  .container {{
+    width: auto;
+    max-width: none;
+    min-height: auto;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+  }}
+  tr, thead, tfoot {{
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }}
+}}
 @media (max-width: 768px) {{
   body {{
+    padding: 0;
+  }}
+  .container {{
+    width: 100%;
+    max-width: none;
+    min-height: 0;
     padding: 1rem;
+    border: 0;
   }}
   table {{
-    font-size: 0.9rem;
+    font-size: var(--font-size-sm);
   }}
 }}
   </style>
@@ -399,7 +463,7 @@ def generate_validation_report(
     *,
     title: str = "Truthound Validation Data Docs",
     subtitle: str = "",
-    theme: ReportTheme | str = ReportTheme.PROFESSIONAL,
+    theme: ReportTheme | str = ReportTheme.LIGHT,
     output_path: str | Path | None = None,
 ) -> str:
     """Generate static HTML validation Data Docs."""

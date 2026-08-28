@@ -91,7 +91,7 @@ path = export_to_pdf(
     output_path="report.pdf",
     title="Data Quality Report",
     subtitle="Q4 2025",
-    theme="professional",
+    theme="light",
 )
 print(f"PDF saved to: {path}")
 ```
@@ -170,7 +170,7 @@ Charts are automatically rendered as SVG during PDF export.
 from truthound.datadocs import HTMLReportBuilder
 
 # Builder for PDF (internally uses _use_svg=True)
-builder = HTMLReportBuilder(theme="professional", _use_svg=True)
+builder = HTMLReportBuilder(theme="light", _use_svg=True)
 html = builder.build(profile_dict)
 
 # export_to_pdf automatically uses SVG
@@ -184,6 +184,33 @@ export_to_pdf(profile_dict, "report.pdf")  # Uses SVG charts
 
 **Unsupported Charts (substituted with Bar):**
 - Heatmap, Scatter, Box, Gauge, Radar
+
+## Visual Smoke Testing
+
+Truthound's A4 report themes are covered by visual smoke tests so report changes do not silently drop critical layout rules. The smoke tests generate deterministic sample reports for `light`, `dark`, and `minimal`, then verify the HTML/PDF-ready output includes:
+
+- A4 portrait print rules
+- 210mm document shell sizing
+- Korean font stack for report typography
+- Collapsed report tables with repeated print headers
+- Summary box, caption, and page-break controls
+- SVG chart output for PDF-ready rendering
+
+PDF export smoke tests run when WeasyPrint and its system libraries are available. The PDF smoke creates a real PDF, checks the `%PDF` header and minimum size, extracts report text with `pypdf` or `pdfplumber` when available, and renders the first page to PNG when Poppler `pdftoppm` is installed. If those dependencies are missing in a lightweight developer environment, the PDF test is skipped explicitly while HTML and PDF-ready HTML coverage still run.
+
+For CI environments that are expected to validate PDF export, install `truthound[pdf]` plus the platform WeasyPrint/Pango/Cairo libraries and set:
+
+```bash
+TRUTHOUND_DATADOCS_REQUIRE_PDF_SMOKE=1 pytest tests/datadocs/test_report_visual_smoke.py
+```
+
+When Poppler is installed and first-page rendering must also be enforced, set:
+
+```bash
+TRUTHOUND_DATADOCS_REQUIRE_PDF_RENDER=1 pytest tests/datadocs/test_report_visual_smoke.py
+```
+
+These flags make missing PDF dependencies fail the test instead of skipping it, so CI does not silently lose PDF coverage.
 
 ## Print CSS
 
@@ -307,7 +334,7 @@ def export_to_pdf(
     output_path: str | Path,
     title: str = "Data Profile Report",
     subtitle: str = "",
-    theme: ReportTheme | str = ReportTheme.PROFESSIONAL,
+    theme: ReportTheme | str = ReportTheme.LIGHT,
 ) -> Path:
     """
     Export profile to PDF.

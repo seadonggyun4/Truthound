@@ -60,7 +60,7 @@ class TruthoundContextConfig:
     auto_create_baseline: bool = True
     auto_create_workspace: bool = True
     default_result_format: str = "summary"
-    docs_theme: str = "professional"
+    docs_theme: str = "light"
     max_metric_history_entries: int = 100
 
     @classmethod
@@ -87,7 +87,7 @@ class TruthoundContextConfig:
             auto_create_baseline=bool(context_data.get("auto_create_baseline", True)),
             auto_create_workspace=bool(context_data.get("auto_create_workspace", True)),
             default_result_format=str(context_data.get("default_result_format", "summary")),
-            docs_theme=str(context_data.get("docs_theme", "professional")),
+            docs_theme=str(context_data.get("docs_theme", "light")),
             max_metric_history_entries=_coerce_positive_int(
                 context_data.get("max_metric_history_entries", 100),
                 100,

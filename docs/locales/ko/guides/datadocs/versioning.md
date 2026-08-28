@@ -42,7 +42,7 @@ version = storage.save(
     format="html",
     message="Added new quality metrics",
     created_by="data-team",
-    metadata={"title": "Customer Data", "theme": "professional"},
+    metadata={"title": "Customer Data", "theme": "light"},
 )
 
 print(f"Saved version: {version.info.version}")

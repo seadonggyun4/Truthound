@@ -42,11 +42,11 @@ Example:
     validation_html = generate_validation_report(run)
 
     # Or use the builder for more control
-    builder = HTMLReportBuilder(theme=ReportTheme.PROFESSIONAL)
+    builder = HTMLReportBuilder(theme=ReportTheme.LIGHT)
     html = builder.build(profile)
     builder.save("report.html", html)
 
-    validation_builder = ValidationDocsBuilder(theme=ReportTheme.PROFESSIONAL)
+    validation_builder = ValidationDocsBuilder(theme=ReportTheme.LIGHT)
     validation_html = validation_builder.build(run)
 
     # Launch dashboard (requires truthound[dashboard])
@@ -92,9 +92,7 @@ from truthound.datadocs.base import (
 from truthound.datadocs.themes import (
     LIGHT_THEME,
     DARK_THEME,
-    PROFESSIONAL_THEME,
     MINIMAL_THEME,
-    MODERN_THEME,
     THEMES,
     get_theme,
     get_available_themes,
@@ -227,9 +225,7 @@ __all__ = [
     # === Themes ===
     "LIGHT_THEME",
     "DARK_THEME",
-    "PROFESSIONAL_THEME",
     "MINIMAL_THEME",
-    "MODERN_THEME",
     "THEMES",
     "get_theme",
     "get_available_themes",

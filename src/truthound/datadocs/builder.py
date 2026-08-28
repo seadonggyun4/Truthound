@@ -307,7 +307,7 @@ class HTMLReportBuilder:
 
     def __init__(
         self,
-        theme: ReportTheme | str = ReportTheme.PROFESSIONAL,
+        theme: ReportTheme | str = ReportTheme.LIGHT,
         config: ReportConfig | None = None,
         *,
         _use_svg: bool = False,
@@ -321,13 +321,14 @@ class HTMLReportBuilder:
         """
         if config:
             self.config = config
+            self._theme_config = self.config.custom_theme or get_theme(self.config.theme)
+            if not self.config.custom_theme:
+                self.config.theme = ReportTheme(self._theme_config.name)
         else:
-            self.config = ReportConfig(
-                theme=ReportTheme(theme) if isinstance(theme, str) else theme,
-            )
+            self._theme_config = get_theme(theme)
+            self.config = ReportConfig(theme=ReportTheme(self._theme_config.name))
 
         self._use_svg = _use_svg
-        self._theme_config = self.config.custom_theme or get_theme(self.config.theme)
         # Use SVG for PDF, ApexCharts for HTML
         chart_lib = ChartLibrary.SVG if _use_svg else ChartLibrary.APEXCHARTS
         self._chart_renderer = get_chart_renderer(chart_lib)
@@ -563,7 +564,7 @@ class HTMLReportBuilder:
         Returns:
             Complete HTML document as string
         """
-        is_dark = spec.config.theme == ReportTheme.DARK
+        is_dark = self._theme_config.name == ReportTheme.DARK.value
         css = get_complete_stylesheet(
             self._theme_config.to_css_vars(),
             is_dark=is_dark,
@@ -761,28 +762,29 @@ class HTMLReportBuilder:
         return html_content
 
     def _get_pdf_professional_css(self) -> str:
-        """Get CSS for professional PDF document styling."""
+        """Get CSS for Korean public/research PDF document styling."""
         return '''
 /* =============================================================================
-   Professional PDF Document Styling
+   Korean Public/Research PDF Document Styling
    ============================================================================= */
 
 /* Cover Page */
 .cover-page {
-    min-height: 100vh;
+    min-height: 257mm;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 3rem;
+    padding: 24mm 18mm;
     page-break-after: always;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    background: var(--color-surface);
+    border: 1.2pt solid var(--color-border);
 }
 
 .cover-logo {
-    max-height: 80px;
-    margin-bottom: 2rem;
+    max-height: 24mm;
+    margin-bottom: 18mm;
 }
 
 .cover-content {
@@ -794,33 +796,33 @@ class HTMLReportBuilder:
 }
 
 .cover-title {
-    font-size: 2.5rem;
+    font-size: 20pt;
     font-weight: 700;
-    color: #1a1a2e;
-    margin-bottom: 0.75rem;
-    letter-spacing: -0.02em;
+    color: var(--color-primary);
+    margin-bottom: 5mm;
+    letter-spacing: 0;
 }
 
 .cover-subtitle {
-    font-size: 1.25rem;
-    color: #6c757d;
-    margin-bottom: 2rem;
+    font-size: 11pt;
+    color: var(--color-text-secondary);
+    margin-bottom: 12mm;
     font-weight: 400;
 }
 
 .cover-divider {
-    width: 100px;
-    height: 4px;
-    background: linear-gradient(90deg, #4361ee 0%, #7209b7 100%);
-    margin: 2rem 0;
-    border-radius: 2px;
+    width: 42mm;
+    height: 0;
+    border-top: 2pt solid var(--color-primary);
+    border-bottom: 0.6pt solid var(--color-secondary);
+    margin: 12mm 0;
 }
 
 .cover-meta {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    margin-top: 1rem;
+    gap: 4mm;
+    margin-top: 8mm;
 }
 
 .cover-meta-item {
@@ -830,16 +832,14 @@ class HTMLReportBuilder:
 }
 
 .cover-meta-label {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: #6c757d;
+    font-size: 8.5pt;
+    color: var(--color-text-secondary);
     font-weight: 600;
 }
 
 .cover-meta-value {
-    font-size: 1rem;
-    color: #1a1a2e;
+    font-size: 10pt;
+    color: var(--color-text-primary);
     font-weight: 500;
 }
 
@@ -849,30 +849,31 @@ class HTMLReportBuilder:
 }
 
 .cover-generator {
-    font-size: 0.875rem;
-    color: #4361ee;
+    font-size: 9pt;
+    color: var(--color-primary);
     font-weight: 500;
-    margin-bottom: 0.25rem;
+    margin-bottom: 2mm;
 }
 
 .cover-timestamp {
-    font-size: 0.75rem;
-    color: #6c757d;
+    font-size: 8pt;
+    color: var(--color-text-secondary);
 }
 
 /* Professional Table of Contents */
 .report-toc-professional {
     page-break-after: always;
-    padding: 3rem 2rem;
+    padding: 12mm 4mm;
+    border: 1pt solid var(--color-border);
 }
 
 .toc-title-professional {
-    font-size: 1.5rem;
+    font-size: 14pt;
     font-weight: 700;
-    color: #1a1a2e;
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid #4361ee;
+    color: var(--color-primary);
+    margin-bottom: 8mm;
+    padding-bottom: 3mm;
+    border-bottom: 1.5pt solid var(--color-primary);
 }
 
 .toc-table {
@@ -881,7 +882,7 @@ class HTMLReportBuilder:
 }
 
 .toc-row {
-    border-bottom: 1px dotted #dee2e6;
+    border-bottom: 0.5pt dotted var(--color-border);
 }
 
 .toc-row:last-child {
@@ -889,68 +890,72 @@ class HTMLReportBuilder:
 }
 
 .toc-number {
-    width: 2rem;
-    padding: 0.75rem 0;
+    width: 10mm;
+    padding: 3mm 0;
     font-weight: 600;
-    color: #4361ee;
+    color: var(--color-primary);
     vertical-align: top;
 }
 
 .toc-entry {
-    padding: 0.75rem 0;
+    padding: 3mm 0;
     vertical-align: top;
 }
 
 .toc-entry a {
-    color: #1a1a2e;
+    color: var(--color-text-primary);
     text-decoration: none;
     font-weight: 500;
 }
 
 .toc-entry a:hover {
-    color: #4361ee;
+    color: var(--color-primary);
 }
 
 .toc-dots {
     width: 100%;
-    border-bottom: 1px dotted #adb5bd;
+    border-bottom: 0.5pt dotted var(--color-border);
     vertical-align: bottom;
 }
 
 /* Professional Footer */
 .report-footer-professional {
-    margin-top: 3rem;
-    padding-top: 1.5rem;
+    margin-top: 14mm;
+    padding-top: 5mm;
 }
 
 .footer-line {
-    height: 2px;
-    background: linear-gradient(90deg, #4361ee 0%, transparent 100%);
-    margin-bottom: 1rem;
+    height: 0;
+    border-top: 1pt solid var(--color-primary);
+    margin-bottom: 4mm;
 }
 
 .footer-text {
-    font-size: 0.875rem;
-    color: #1a1a2e;
+    font-size: 9pt;
+    color: var(--color-text-primary);
     font-weight: 500;
-    margin-bottom: 0.25rem;
+    margin-bottom: 1.5mm;
 }
 
 .footer-disclaimer {
-    font-size: 0.75rem;
-    color: #6c757d;
+    font-size: 8pt;
+    color: var(--color-text-secondary);
     font-style: italic;
 }
 
 /* PDF Document Body */
 body.pdf-document {
-    font-size: 11pt;
-    line-height: 1.6;
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-normal);
 }
 
 body.pdf-document .report-container {
+    width: auto;
     max-width: none;
+    min-height: auto;
     padding: 0;
+    box-shadow: none;
+    border: 0;
 }
 
 body.pdf-document .section-header {
@@ -959,10 +964,10 @@ body.pdf-document .section-header {
 }
 
 body.pdf-document .section-title {
-    font-size: 1.375rem;
-    color: #1a1a2e;
-    border-bottom: 2px solid #4361ee;
-    padding-bottom: 0.5rem;
+    font-size: 13pt;
+    color: var(--color-primary);
+    border-bottom: 1.5pt solid var(--color-primary);
+    padding-bottom: 2mm;
 }
 
 body.pdf-document .section-subtitle {
@@ -981,22 +986,23 @@ body.pdf-document .chart-container {
 }
 
 body.pdf-document .data-table {
-    font-size: 0.875rem;
+    font-size: var(--font-size-sm);
 }
 
 body.pdf-document .data-table th {
-    background-color: #f8f9fa;
+    background-color: var(--color-primary);
+    color: #ffffff;
     font-weight: 600;
 }
 
 body.pdf-document .metric-card {
     box-shadow: none;
-    border: 1px solid #dee2e6;
+    border: 0.5pt solid var(--color-border);
 }
 
 body.pdf-document .column-card {
     box-shadow: none;
-    border: 1px solid #dee2e6;
+    border: 0.5pt solid var(--color-border);
     page-break-inside: avoid;
 }
 
@@ -1008,7 +1014,7 @@ body.pdf-document .svg-chart {
 /* Quality score styling for PDF */
 body.pdf-document .quality-score-card {
     box-shadow: none;
-    border: 1px solid #dee2e6;
+    border: 0.5pt solid var(--color-border);
 }
 
 /* Hide interactive elements in PDF */
@@ -1043,7 +1049,7 @@ def generate_html_report(
     profile: dict[str, Any] | Any,
     title: str = "Data Profile Report",
     subtitle: str = "",
-    theme: ReportTheme | str = ReportTheme.PROFESSIONAL,
+    theme: ReportTheme | str = ReportTheme.LIGHT,
     output_path: str | Path | None = None,
 ) -> str:
     """Generate an HTML report from profile data.
@@ -1073,7 +1079,7 @@ def generate_report_from_file(
     profile_path: str | Path,
     output_path: str | Path | None = None,
     title: str = "Data Profile Report",
-    theme: ReportTheme | str = ReportTheme.PROFESSIONAL,
+    theme: ReportTheme | str = ReportTheme.LIGHT,
 ) -> str:
     """Generate an HTML report from a profile JSON file.
 
@@ -1206,7 +1212,7 @@ def export_to_pdf(
     output_path: str | Path,
     title: str = "Data Profile Report",
     subtitle: str = "",
-    theme: ReportTheme | str = ReportTheme.PROFESSIONAL,
+    theme: ReportTheme | str = ReportTheme.LIGHT,
 ) -> Path:
     """Export report to PDF with professional document formatting.
 

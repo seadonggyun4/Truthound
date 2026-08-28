@@ -1,17 +1,16 @@
 # Themes
 
-실무 운영 가이드에서 Data Docs, Truthound, Data, Docs을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다.
+Truthound Data Docs는 세 가지 공개 built-in 테마와 custom theme 구성을 지원합니다. built-in 테마는 HTML과 PDF 모두에서 한국 공공기관/연구용 A4 보고서 스타일을 기준으로 설계됩니다.
 
 ## Built-in Themes
 
-| 실무 운영 가이드에서 Theme을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | 실무 운영 가이드에서 Description을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | 실무 운영 가이드에서 Best을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. |
+| Theme | 설명 | 적합한 용도 |
 |-------|-------------|----------|
-| 실무 운영 가이드에서 `default`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | 실무 운영 가이드에서 Clean을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | 실무 운영 가이드에서 General을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. |
-| 실무 운영 가이드에서 `light`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | 실무 운영 가이드에서 Light을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | 실무 운영 가이드에서 Printing을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. |
-| 실무 운영 가이드에서 `dark`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | 실무 운영 가이드에서 Dark을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | 실무 운영 가이드에서 Night을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. |
-| 실무 운영 가이드에서 `minimal`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | 실무 운영 가이드에서 Minimalist을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | 실무 운영 가이드에서 Concise을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. |
-| 실무 운영 가이드에서 `modern`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | 실무 운영 가이드에서 Apple을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | 실무 운영 가이드에서 Marketing을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. |
-| 실무 운영 가이드에서 `professional`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | 실무 운영 가이드에서 Corporate을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | Business 리포트 (default) |
+| `light` | 한국 공공기관/연구용 A4 보고서 스타일이며 기본 테마 | 인쇄 보고서, 공식 검토, 연구 산출물 |
+| `dark` | 같은 A4 정보 구조를 유지하는 다크 보고서 스타일 | 어두운 환경의 화면 검토 |
+| `minimal` | 흑백/저채도 중심의 간결한 A4 보고서 스타일 | 내부 보고서, 흑백 인쇄 |
+
+`default`는 `light`로 매핑되는 hidden compatibility alias입니다. `professional`과 `modern`은 한 릴리스 동안 `light`로 매핑되는 deprecated alias이며 public theme listing API에는 반환되지 않습니다.
 
 ## Theme Usage
 
@@ -36,10 +35,10 @@ from truthound.datadocs import (
 )
 
 # List available themes
-print(get_available_themes())  # ['default', 'light', 'dark', 'minimal', 'modern', 'professional']
+print(get_available_themes())  # ['light', 'dark', 'minimal']
 
 # Specify theme by string
-builder = HTMLReportBuilder(theme="professional")
+builder = HTMLReportBuilder(theme="light")
 
 # Specify theme by enum
 builder = HTMLReportBuilder(theme=ReportTheme.DARK)
@@ -222,14 +221,14 @@ html = builder.build(profile_dict)
 from truthound.datadocs.themes import get_theme
 
 # Get existing theme
-base_theme = get_theme("professional")
+base_theme = get_theme("light")
 
 # Create new theme by changing only colors
 from dataclasses import replace
 
 custom_theme = replace(
     base_theme,
-    name="my_professional",
+    name="my_report_theme",
     colors=replace(
         base_theme.colors,
         primary="#e63946",
@@ -375,10 +374,10 @@ from truthound.datadocs.themes import (
 )
 
 # List themes
-themes = get_available_themes()  # ['default', 'light', 'dark', ...]
+themes = get_available_themes()  # ['light', 'dark', 'minimal']
 
 # Get theme
-theme = get_theme("professional")
+theme = get_theme("light")
 
 # Get with custom overrides
 theme = get_theme("dark", colors=ThemeColors(primary="#ff0000"))
@@ -394,9 +393,7 @@ print(THEMES.keys())
 from truthound.datadocs import (
     LIGHT_THEME,
     DARK_THEME,
-    PROFESSIONAL_THEME,
     MINIMAL_THEME,
-    MODERN_THEME,
 )
 
 # Direct usage

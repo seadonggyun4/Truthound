@@ -2,7 +2,7 @@
 
 This module provides comprehensive CSS styling for the static HTML reports.
 The styles are designed to be:
-- Clean and professional
+- Korean public/research A4 report-oriented
 - Responsive for all screen sizes
 - Print-friendly
 - Dark/Light mode compatible
@@ -31,8 +31,13 @@ body {
     line-height: var(--line-height-normal);
     color: var(--color-text-primary);
     background-color: var(--color-background);
+    letter-spacing: 0;
+    word-break: keep-all;
+    overflow-wrap: break-word;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
 }
 
 /* Typography */
@@ -228,6 +233,301 @@ LAYOUT_CSS = """
     text-align: center;
     font-size: var(--font-size-sm);
     color: var(--color-text-secondary);
+}
+"""
+
+# =============================================================================
+# Korean public/research A4 report CSS
+# =============================================================================
+
+REPORT_DOCUMENT_CSS = """
+/* A4 report document shell */
+body {
+    padding: 10mm 0;
+}
+
+.report-container,
+.container {
+    width: 210mm;
+    max-width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    padding: 20mm 18mm 16mm;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 2mm 10mm var(--color-shadow);
+}
+
+.report-header,
+.hero {
+    display: block;
+    margin-bottom: 9mm;
+    padding: 0 0 5mm;
+    background: transparent;
+    border: 0;
+    border-bottom: 2pt solid var(--color-primary);
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.report-header-main {
+    align-items: flex-start;
+    gap: 6mm;
+}
+
+.report-title,
+.hero h1,
+.cover-title {
+    color: var(--color-primary);
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    line-height: 1.3;
+    letter-spacing: 0;
+}
+
+.report-subtitle,
+.hero .muted {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-lg);
+    margin-top: 2mm;
+}
+
+.report-meta {
+    display: flex;
+    gap: 5mm;
+    margin-top: 4mm;
+    padding-top: 3mm;
+    border-top: 0.5pt solid var(--color-border);
+    font-size: var(--font-size-sm);
+}
+
+.report-toc,
+.report-summary,
+.summary-box,
+.quality-overview {
+    margin-bottom: 8mm;
+    padding: 5mm 6mm;
+    background-color: rgba(31, 78, 121, 0.06);
+    border: 0.8pt solid var(--color-border);
+    border-left: 3pt solid var(--color-primary);
+    border-radius: var(--border-radius-md);
+    box-shadow: none;
+    break-inside: avoid;
+}
+
+.toc-title,
+.report-section h2,
+.section-title {
+    color: var(--color-primary);
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    line-height: 1.35;
+    letter-spacing: 0;
+}
+
+.toc-title::before,
+.report-section h2::before,
+.section-title::before {
+    content: "□ ";
+}
+
+.toc-list {
+    display: block;
+    list-style: none;
+    margin-top: 3mm;
+}
+
+.toc-item {
+    margin: 1.5mm 0;
+}
+
+.toc-item a {
+    display: inline;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    color: var(--color-text-primary);
+}
+
+.toc-item a::before {
+    content: "○ ";
+    color: var(--color-secondary);
+}
+
+.report-section,
+.panel {
+    margin-bottom: 9mm;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+.section-header {
+    margin-bottom: 4mm;
+    padding-bottom: 2mm;
+    border-bottom: 1.2pt solid var(--color-primary);
+}
+
+.section-content {
+    gap: 4mm;
+}
+
+.section-content p,
+.report-section p {
+    color: var(--color-text-primary);
+    margin-bottom: 3mm;
+}
+
+.data-list {
+    display: grid;
+    grid-template-columns: minmax(34mm, auto) 1fr;
+    gap: 0;
+    border-top: 0.6pt solid var(--color-border);
+    border-left: 0.6pt solid var(--color-border);
+}
+
+.data-list dt,
+.data-list dd {
+    margin: 0;
+    padding: 2mm 3mm;
+    border-right: 0.6pt solid var(--color-border);
+    border-bottom: 0.6pt solid var(--color-border);
+    font-size: var(--font-size-sm);
+}
+
+.data-list dt {
+    background-color: rgba(31, 78, 121, 0.08);
+    color: var(--color-primary);
+    font-weight: var(--font-weight-semibold);
+}
+
+.table-container {
+    overflow-x: auto;
+    margin-bottom: 6mm;
+    break-inside: avoid;
+}
+
+.table-title,
+.chart-title {
+    color: var(--color-primary);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    margin-bottom: 2.5mm;
+}
+
+table,
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+    font-size: var(--font-size-sm);
+    border-top: 1pt solid var(--color-primary);
+    border-left: 0.5pt solid var(--color-border);
+}
+
+table th,
+table td,
+.data-table th,
+.data-table td {
+    padding: 2mm 2.5mm;
+    border-right: 0.5pt solid var(--color-border);
+    border-bottom: 0.5pt solid var(--color-border);
+    text-align: left;
+    vertical-align: middle;
+}
+
+table th,
+.data-table th {
+    background-color: var(--color-primary);
+    color: #ffffff;
+    font-weight: var(--font-weight-semibold);
+    text-align: center;
+}
+
+table td:nth-child(n+3),
+.data-table td:nth-child(n+3) {
+    text-align: right;
+}
+
+table tbody tr:nth-child(even),
+.data-table tbody tr:nth-child(even) {
+    background-color: rgba(31, 78, 121, 0.035);
+}
+
+.metric-card,
+.quality-score-card,
+.column-card,
+.chart-container,
+.pattern-item,
+.correlation-item,
+.recommendation-item,
+.validator-suggestion,
+.panel {
+    border: 0.6pt solid var(--color-border);
+    border-radius: var(--border-radius-md);
+    box-shadow: none;
+}
+
+.metrics-grid,
+.quality-scores-grid {
+    gap: 3mm;
+}
+
+.metric-card,
+.quality-score-card {
+    padding: 4mm;
+    background-color: var(--color-surface);
+}
+
+.metric-value {
+    color: var(--color-primary);
+}
+
+.chart-container {
+    padding: 4mm;
+    background-color: var(--color-surface);
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+.chart-container::after,
+.figure-caption,
+.report-caption {
+    display: block;
+    margin-top: 2mm;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+    text-align: center;
+}
+
+.alert {
+    border-width: 0.6pt 0.6pt 0.6pt 3pt;
+    border-style: solid;
+    border-radius: var(--border-radius-md);
+    break-inside: avoid;
+}
+
+.recommendations-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+.recommendation-item {
+    position: relative;
+    padding-left: 7mm;
+    background-color: var(--color-surface);
+}
+
+.recommendation-item::before {
+    content: "-";
+    position: absolute;
+    left: 3mm;
+    color: var(--color-secondary);
+    font-weight: var(--font-weight-bold);
 }
 """
 
@@ -859,16 +1159,32 @@ RESPONSIVE_CSS = """
 
 PRINT_CSS = """
 /* Print Styles */
+@page {
+    size: A4 portrait;
+    margin: 16mm 14mm;
+}
+
 @media print {
+    html {
+        font-size: 10.5pt;
+    }
+
     body {
         background-color: white;
         color: black;
-        font-size: 12pt;
+        font-size: var(--font-size-base);
+        margin: 0;
+        padding: 0;
     }
 
-    .report-container {
+    .report-container,
+    .container {
+        width: auto;
         max-width: none;
+        min-height: auto;
         padding: 0;
+        border: 0;
+        box-shadow: none;
     }
 
     .download-button,
@@ -876,16 +1192,40 @@ PRINT_CSS = """
         display: none;
     }
 
-    .report-section {
+    .report-section,
+    .panel,
+    .summary-box,
+    .report-summary,
+    .quality-overview,
+    .alert {
         page-break-inside: avoid;
+        break-inside: avoid;
     }
 
-    .chart-container {
+    .chart-container,
+    figure {
         page-break-inside: avoid;
+        break-inside: avoid;
     }
 
-    .column-card {
+    table,
+    .data-table {
+        page-break-inside: auto;
+    }
+
+    tr,
+    thead,
+    tfoot {
         page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+    thead {
+        display: table-header-group;
+    }
+
+    tfoot {
+        display: table-footer-group;
     }
 
     .no-print {
@@ -1080,6 +1420,8 @@ def get_complete_stylesheet(
 {BASE_CSS}
 
 {LAYOUT_CSS}
+
+{REPORT_DOCUMENT_CSS}
 
 {components_css}
 

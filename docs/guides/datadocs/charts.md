@@ -239,7 +239,7 @@ By default, HTML reports use ApexCharts, and PDFs use SVG.
 from truthound.datadocs import HTMLReportBuilder
 
 # HTML report (ApexCharts auto-selected)
-builder = HTMLReportBuilder(theme="professional")
+builder = HTMLReportBuilder(theme="light")
 html = builder.build(profile)
 
 # PDF export (SVG auto-selected)

@@ -42,7 +42,7 @@ truthound docs generate <profile_file> [OPTIONS]
 | `--output` | `-o` | None | Output file path |
 | `--title` | `-t` | `Data Profile Report` | Report title |
 | `--subtitle` | `-s` | `""` | Report subtitle |
-| `--theme` | | `professional` | Theme (light, dark, professional, minimal, modern) |
+| `--theme` | | `light` | Theme (light, dark, minimal) |
 | `--format` | `-f` | `html` | Output format (html, pdf) |
 
 ## Description
@@ -108,18 +108,18 @@ truthound docs generate profile.json \
   -o quarterly_report.html \
   --title "Q4 2025 Data Quality Report" \
   --subtitle "Customer Analytics Pipeline" \
-  --theme professional
+  --theme light
 ```
 
 ## Themes
 
 | Theme | Description | Best For |
 |-------|-------------|----------|
-| `light` | Clean, bright style for general use | Day viewing, printing |
-| `dark` | Dark mode for reduced eye strain | Night viewing, presentations |
-| `professional` | Corporate style with calm colors (default) | Business reports |
-| `minimal` | Minimalist design, monochrome accents | Simple documentation |
-| `modern` | Contemporary design, vibrant gradients | Marketing, demos |
+| `light` | Korean public/research A4 report style (default) | Printed reports, formal reviews |
+| `dark` | Dark report style with the same A4 structure | Screen review in dark environments |
+| `minimal` | Low-chroma formal A4 report style | Concise internal reports, monochrome printing |
+
+`default` is a hidden alias for `light`. `professional` and `modern` are deprecated aliases for `light` for one release and are not shown in the public theme list.
 
 ## Chart Rendering
 
@@ -163,7 +163,7 @@ Generated reports include:
   run: truthound profile data.csv --format json -o profile.json
 
 - name: Generate Report
-  run: truthound docs generate profile.json -o report.html --theme professional
+  run: truthound docs generate profile.json -o report.html --theme light
 
 - name: Upload Artifact
   uses: actions/upload-artifact@v4
@@ -188,7 +188,7 @@ truthound docs generate profile.json \
 
 ```bash
 # Generate reports in multiple themes
-for theme in light dark professional; do
+for theme in light dark minimal; do
   truthound docs generate profile.json \
     -o "report_${theme}.html" \
     --theme $theme
@@ -202,7 +202,7 @@ done
 truthound docs generate profile.json \
   -o report.pdf \
   --format pdf \
-  --theme professional \
+  --theme light \
   --title "Monthly Data Quality Summary"
 ```
 

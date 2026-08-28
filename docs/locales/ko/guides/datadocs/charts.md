@@ -239,7 +239,7 @@ html = renderer.render(chart_spec)
 from truthound.datadocs import HTMLReportBuilder
 
 # HTML report (ApexCharts auto-selected)
-builder = HTMLReportBuilder(theme="professional")
+builder = HTMLReportBuilder(theme="light")
 html = builder.build(profile)
 
 # PDF export (SVG auto-selected)

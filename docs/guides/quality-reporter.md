@@ -173,7 +173,7 @@ config = QualityReporterConfig(
     title="My Quality Report",
     include_charts=True,
     chart_types=[ChartType.BAR, ChartType.GAUGE, ChartType.RADAR],
-    theme="light",  # light, dark, professional
+    theme="light",  # light, dark, minimal
 )
 
 reporter = HtmlQualityReporter(config=config)
@@ -537,7 +537,7 @@ config = QualityReporterConfig(
     max_scores=None,              # None for all
 
     # HTML-specific
-    theme="light",                # light, dark, professional
+    theme="light",                # light, dark, minimal
     chart_library="apexcharts",   # apexcharts, chartjs
     chart_types=[ChartType.BAR, ChartType.GAUGE],
     custom_css=None,

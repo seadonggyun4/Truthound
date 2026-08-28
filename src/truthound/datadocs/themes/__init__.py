@@ -3,11 +3,10 @@
 This module provides a comprehensive theming system for customizing
 report appearance, including white-labeling for enterprise use.
 
-Available Themes:
-- DefaultTheme: Clean, professional default theme
-- MinimalTheme: Minimal, lightweight theme
-- DarkTheme: Dark mode theme
-- EnterpriseTheme: Fully customizable enterprise theme
+Available public themes:
+- LightTheme: Korean public/research A4 report theme
+- DarkTheme: Dark report theme with the same structure
+- MinimalTheme: Low-chroma formal report theme
 
 Features:
 - CSS custom properties for easy customization
@@ -53,9 +52,7 @@ from truthound.datadocs.themes.default import (
 # Backwards compatibility aliases
 LIGHT_THEME = LightTheme()
 DARK_THEME = DarkTheme()
-PROFESSIONAL_THEME = ProfessionalTheme()
 MINIMAL_THEME = MinimalTheme()
-MODERN_THEME = ModernTheme()
 THEMES = BUILT_IN_THEMES
 
 
@@ -78,8 +75,6 @@ __all__ = [
     "LightTheme",
     "DarkTheme",
     "MinimalTheme",
-    "ModernTheme",
-    "ProfessionalTheme",
     # Enterprise
     "EnterpriseTheme",
     "EnterpriseThemeConfig",
@@ -92,9 +87,7 @@ __all__ = [
     # Backwards compatibility
     "LIGHT_THEME",
     "DARK_THEME",
-    "PROFESSIONAL_THEME",
     "MINIMAL_THEME",
-    "MODERN_THEME",
     "THEMES",
     "get_theme",
     "get_available_themes",

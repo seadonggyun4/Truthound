@@ -13,7 +13,7 @@ from truthound.datadocs import generate_html_report
 html = generate_html_report(
     profile=profile_dict,
     title="Data Quality Report",
-    theme="professional",
+    theme="light",
 )
 
 # Save to file
@@ -42,14 +42,14 @@ profile = th.profile("data.csv")
 profile_html = generate_html_report(
     profile=profile.to_dict(),
     title="Daily Data Quality Report",
-    theme="professional",
+    theme="light",
 )
 
 # Step 3b: Generate validation docs from the canonical ValidationRunResult
 validation_html = generate_validation_report(
     run,
     title="Daily Validation Run",
-    theme="professional",
+    theme="light",
 )
 
 # Step 4: Save both artifacts
@@ -97,7 +97,7 @@ from truthound.datadocs.exporters import PDFExporter
 # Generate HTML report
 html = generate_html_report(
     profile=profile_dict,
-    theme="professional",
+    theme="light",
     chart_library="svg",  # Use SVG for PDF compatibility
 )
 
@@ -209,7 +209,7 @@ from truthound.datadocs import generate_html_report
 html = generate_html_report(
     profile=profile_dict,
     title="Data Quality Report",
-    theme="professional",
+    theme="light",
     output_path="report.html",
 )
 ```
@@ -229,7 +229,7 @@ truthound docs generate <profile_file> [OPTIONS]
 #   -o, --output TEXT    Output file path
 #   -t, --title TEXT     Report title
 #   -s, --subtitle TEXT  Subtitle
-#   --theme TEXT         Theme (light, dark, professional, minimal, modern)
+#   --theme TEXT         Theme (light, dark, minimal)
 #   -f, --format TEXT    Output format (html, pdf)
 ```
 

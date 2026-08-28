@@ -91,7 +91,7 @@ If you are still learning the platform, start with [Getting Started](../getting-
 
 | Command | Arguments | Options |
 |---------|-----------|---------|
-| `docs generate` | PROFILE_FILE (required) | `--output, -o`, `--title, -t` ("Data Profile Report"), `--subtitle, -s`, `--theme` (light/dark/professional/minimal/modern), `--format, -f` (html/pdf) |
+| `docs generate` | PROFILE_FILE (required) | `--output, -o`, `--title, -t` ("Data Profile Report"), `--subtitle, -s`, `--theme` (light/dark/minimal), `--format, -f` (html/pdf) |
 | `docs themes` | - | - |
 
 ### Realtime Commands Summary

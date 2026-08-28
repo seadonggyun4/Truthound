@@ -91,7 +91,7 @@ path = export_to_pdf(
     output_path="report.pdf",
     title="Data Quality Report",
     subtitle="Q4 2025",
-    theme="professional",
+    theme="light",
 )
 print(f"PDF saved to: {path}")
 ```
@@ -170,7 +170,7 @@ result = exporter.export(html_content, report_context)
 from truthound.datadocs import HTMLReportBuilder
 
 # Builder for PDF (internally uses _use_svg=True)
-builder = HTMLReportBuilder(theme="professional", _use_svg=True)
+builder = HTMLReportBuilder(theme="light", _use_svg=True)
 html = builder.build(profile_dict)
 
 # export_to_pdf automatically uses SVG
@@ -184,6 +184,33 @@ export_to_pdf(profile_dict, "report.pdf")  # Uses SVG charts
 
 실무 운영 가이드에서 Unsupported, Charts, Bar을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다.
 - 실무 운영 가이드에서 Heatmap, Scatter, Box, Gauge, Radar을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다.
+
+## Visual Smoke Testing
+
+Truthound의 A4 보고서 테마는 visual smoke test로 보호됩니다. 보고서 변경 중 핵심 레이아웃 규칙이 조용히 사라지지 않도록 deterministic sample report를 `light`, `dark`, `minimal` 테마별로 생성하고 HTML/PDF-ready 산출물에 다음 항목이 포함되는지 검증합니다.
+
+- A4 portrait print 규칙
+- 210mm 문서지 shell 크기
+- 한국어 보고서용 font stack
+- 인쇄 header 반복이 가능한 collapsed report table
+- summary box, caption, page-break 제어
+- PDF-ready 렌더링을 위한 SVG chart output
+
+PDF export smoke test는 WeasyPrint와 시스템 라이브러리를 사용할 수 있는 환경에서 실행됩니다. 이 smoke는 실제 PDF를 생성한 뒤 `%PDF` header와 최소 파일 크기를 확인하고, 가능하면 `pypdf` 또는 `pdfplumber`로 보고서 텍스트를 추출하며, Poppler `pdftoppm`이 있으면 첫 페이지 PNG 렌더링까지 확인합니다. 가벼운 개발 환경에 의존성이 없으면 PDF test는 명시적으로 skip되며, HTML과 PDF-ready HTML 검증은 계속 실행됩니다.
+
+PDF export 검증을 반드시 수행해야 하는 CI 환경에서는 `truthound[pdf]`와 플랫폼별 WeasyPrint/Pango/Cairo 라이브러리를 설치한 뒤 다음처럼 실행합니다.
+
+```bash
+TRUTHOUND_DATADOCS_REQUIRE_PDF_SMOKE=1 pytest tests/datadocs/test_report_visual_smoke.py
+```
+
+Poppler가 설치되어 있고 첫 페이지 렌더링까지 필수로 검증하려면 다음 flag를 함께 사용합니다.
+
+```bash
+TRUTHOUND_DATADOCS_REQUIRE_PDF_RENDER=1 pytest tests/datadocs/test_report_visual_smoke.py
+```
+
+이 flag들은 PDF 의존성 부재를 skip이 아니라 실패로 처리하므로, CI에서 PDF coverage가 조용히 사라지는 일을 막습니다.
 
 ## Print CSS
 
@@ -307,7 +334,7 @@ def export_to_pdf(
     output_path: str | Path,
     title: str = "Data Profile Report",
     subtitle: str = "",
-    theme: ReportTheme | str = ReportTheme.PROFESSIONAL,
+    theme: ReportTheme | str = ReportTheme.LIGHT,
 ) -> Path:
     """
     Export profile to PDF.

@@ -86,13 +86,11 @@ CLI 명령 실행에서 Charts, Dark을(를) 기준으로 데이터 품질 검�
 
 ### Theme Options
 
-| CLI 명령 실행에서 Theme을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 Description을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. |
+| Theme | 설명 |
 |-------|-------------|
-| CLI 명령 실행에서 `light`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 Clean을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. |
-| CLI 명령 실행에서 `dark`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 Dark을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. |
-| CLI 명령 실행에서 `professional`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 Corporate을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. |
-| CLI 명령 실행에서 `minimal`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 Minimalist을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. |
-| CLI 명령 실행에서 `modern`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 Vibrant을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. |
+| `light` | 한국 공공기관/연구용 A4 보고서 스타일이며 기본 테마 |
+| `dark` | 같은 A4 정보 구조를 유지하는 다크 보고서 스타일 |
+| `minimal` | 흑백/저채도 중심의 간결한 A4 보고서 스타일 |
 
 ## Use Cases
 
@@ -103,7 +101,7 @@ CLI 명령 실행에서 Charts, Dark을(를) 기준으로 데이터 품질 검�
 - name: Generate Data Report
   run: |
     truthound profile data.csv --format json -o profile.json
-    truthound docs generate profile.json -o report.html --theme professional
+    truthound docs generate profile.json -o report.html --theme light
 
 - name: Upload Report
   uses: actions/upload-artifact@v4
@@ -124,7 +122,7 @@ truthound docs generate profile.json -o "report_$(date +%Y%m%d).html" --title "D
 
 ```bash
 # Generate PDF for email
-truthound docs generate profile.json -o report.pdf --format pdf --theme professional
+truthound docs generate profile.json -o report.pdf --format pdf --theme light
 ```
 
 ## 다음 단계

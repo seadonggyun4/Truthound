@@ -23,9 +23,7 @@ class ReportTheme(str, Enum):
 
     LIGHT = "light"
     DARK = "dark"
-    PROFESSIONAL = "professional"
     MINIMAL = "minimal"
-    MODERN = "modern"
 
 
 class ChartLibrary(str, Enum):
@@ -295,7 +293,7 @@ class ReportConfig:
     """Configuration for report generation."""
 
     # Theme
-    theme: ReportTheme = ReportTheme.PROFESSIONAL
+    theme: ReportTheme = ReportTheme.LIGHT
     custom_theme: ThemeConfig | None = None
 
     # Chart library

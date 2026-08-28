@@ -46,8 +46,8 @@ def generate_cmd(
     ] = "",
     theme: Annotated[
         str,
-        typer.Option("--theme", help="Report theme (light, dark, professional, minimal, modern)"),
-    ] = "professional",
+        typer.Option("--theme", help="Report theme (light, dark, minimal)"),
+    ] = "light",
     format: Annotated[
         str,
         typer.Option("--format", "-f", help="Output format (html, pdf)"),
@@ -174,11 +174,9 @@ def themes_cmd() -> None:
         typer.echo("")
 
         themes_info = {
-            "light": "Clean and bright, suitable for most use cases",
-            "dark": "Dark mode with vibrant colors, easy on the eyes",
-            "professional": "Corporate style, subdued colors (default)",
-            "minimal": "Minimalist design with monochrome accents",
-            "modern": "Contemporary design with vibrant gradients",
+            "light": "Korean public/research A4 report style (default)",
+            "dark": "Dark report style with the same A4 structure",
+            "minimal": "Low-chroma formal A4 report style",
         }
 
         for theme in get_available_themes():

@@ -5,6 +5,7 @@ This module provides the built-in themes that are available out of the box.
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import replace
 from typing import Any
 
@@ -133,38 +134,53 @@ class DefaultTheme(BaseTheme):
 
 
 class LightTheme(BaseTheme):
-    """Light theme with bright colors.
+    """Korean public/research report theme.
 
-    A clean, light theme with subtle shadows.
+    This is the public default style for A4-oriented Data Docs output.
     """
 
     def __init__(self, **overrides: Any) -> None:
         config = ThemeConfig(
             name="light",
             display_name="Light",
-            description="Clean light theme",
+            description="Korean public/research A4 report theme",
             colors=ThemeColors(
-                background="#ffffff",
-                surface="#f8fafc",
-                text_primary="#0f172a",
-                text_secondary="#64748b",
-                primary="#3b82f6",
-                secondary="#8b5cf6",
-                accent="#ec4899",
-                success="#22c55e",
-                warning="#f59e0b",
-                error="#ef4444",
-                info="#0ea5e9",
-                border="#e2e8f0",
-                shadow="rgba(15, 23, 42, 0.08)",
+                background="#e9ecef",
+                surface="#ffffff",
+                text_primary="#1a1a1a",
+                text_secondary="#555555",
+                primary="#17365D",
+                secondary="#1F4E79",
+                accent="#4a7a2f",
+                success="#2f6f3e",
+                warning="#a15c00",
+                error="#b42318",
+                info="#1F4E79",
+                border="#b9c2d0",
+                shadow="rgba(0, 0, 0, 0.14)",
                 chart_palette=(
-                    "#3b82f6", "#8b5cf6", "#ec4899", "#06b6d4",
-                    "#22c55e", "#f59e0b", "#ef4444", "#6366f1",
-                    "#14b8a6", "#f97316"
+                    "#17365D", "#1F4E79", "#5B8DB8", "#4a7a2f",
+                    "#7aa05a", "#8fa0b6", "#a15c00", "#b42318",
+                    "#555555", "#2f5218"
                 ),
             ),
+            typography=ThemeTypography(
+                font_family="'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif",
+                font_family_mono="'D2Coding', 'Cascadia Code', 'Consolas', monospace",
+                font_size_base="10.8pt",
+                font_size_sm="9.8pt",
+                font_size_lg="11.5pt",
+                font_size_xl="13pt",
+                font_size_2xl="16pt",
+                font_size_3xl="19pt",
+                line_height_normal=1.7,
+            ),
             spacing=ThemeSpacing(
-                shadow_md="0 4px 6px -1px rgba(15, 23, 42, 0.1)",
+                border_radius_sm="0",
+                border_radius_md="2px",
+                border_radius_lg="2px",
+                border_radius_xl="2px",
+                shadow_md="0 1px 10px rgba(0, 0, 0, 0.14)",
             ),
         )
         super().__init__(config)
@@ -186,24 +202,35 @@ class DarkTheme(BaseTheme):
             display_name="Dark",
             description="Modern dark theme",
             colors=ThemeColors(
-                background="#0f172a",
-                surface="#1e293b",
-                text_primary="#f1f5f9",
-                text_secondary="#94a3b8",
-                primary="#60a5fa",
-                secondary="#a78bfa",
-                accent="#f472b6",
+                background="#111827",
+                surface="#1f2937",
+                text_primary="#f8fafc",
+                text_secondary="#cbd5e1",
+                primary="#93c5fd",
+                secondary="#60a5fa",
+                accent="#86efac",
                 success="#4ade80",
                 warning="#fbbf24",
                 error="#f87171",
                 info="#38bdf8",
-                border="#334155",
+                border="#475569",
                 shadow="rgba(0, 0, 0, 0.25)",
                 chart_palette=(
-                    "#60a5fa", "#a78bfa", "#f472b6", "#22d3ee",
-                    "#4ade80", "#fbbf24", "#f87171", "#818cf8",
-                    "#2dd4bf", "#fb923c"
+                    "#93c5fd", "#60a5fa", "#38bdf8", "#86efac",
+                    "#4ade80", "#cbd5e1", "#fbbf24", "#f87171",
+                    "#94a3b8", "#bfdbfe"
                 ),
+            ),
+            typography=ThemeTypography(
+                font_family="'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif",
+                font_family_mono="'D2Coding', 'Cascadia Code', 'Consolas', monospace",
+                font_size_base="10.8pt",
+                font_size_sm="9.8pt",
+                font_size_lg="11.5pt",
+                font_size_xl="13pt",
+                font_size_2xl="16pt",
+                font_size_3xl="19pt",
+                line_height_normal=1.7,
             ),
             spacing=ThemeSpacing(
                 shadow_md="0 4px 6px -1px rgba(0, 0, 0, 0.3)",
@@ -248,20 +275,28 @@ class MinimalTheme(BaseTheme):
                 primary="#404040",
                 secondary="#525252",
                 accent="#262626",
-                success="#16a34a",
-                warning="#ca8a04",
-                error="#dc2626",
-                info="#2563eb",
-                border="#e5e5e5",
+                success="#525252",
+                warning="#737373",
+                error="#404040",
+                info="#525252",
+                border="#cfcfcf",
                 shadow="rgba(0, 0, 0, 0.03)",
                 chart_palette=(
                     "#404040", "#525252", "#737373", "#a3a3a3",
-                    "#16a34a", "#ca8a04", "#dc2626", "#2563eb",
-                    "#0d9488", "#ea580c"
+                    "#171717", "#d4d4d4", "#262626", "#e5e5e5",
+                    "#737373", "#a3a3a3"
                 ),
             ),
             typography=ThemeTypography(
-                font_family="'Helvetica Neue', Arial, sans-serif",
+                font_family="'Malgun Gothic', '맑은 고딕', 'Dotum', '돋움', sans-serif",
+                font_family_mono="'D2Coding', 'Consolas', monospace",
+                font_size_base="10.5pt",
+                font_size_sm="9.5pt",
+                font_size_lg="11pt",
+                font_size_xl="12.5pt",
+                font_size_2xl="15pt",
+                font_size_3xl="18pt",
+                line_height_normal=1.65,
             ),
             spacing=ThemeSpacing(
                 border_radius_sm="2px",
@@ -377,14 +412,22 @@ class ProfessionalTheme(BaseTheme):
 
 
 # Theme registry for easy access
-BUILT_IN_THEMES = {
-    "default": DefaultTheme,
+PUBLIC_BUILT_IN_THEMES = {
     "light": LightTheme,
     "dark": DarkTheme,
     "minimal": MinimalTheme,
-    "modern": ModernTheme,
-    "professional": ProfessionalTheme,
 }
+
+THEME_ALIASES = {
+    "default": "light",
+}
+
+DEPRECATED_THEME_ALIASES = {
+    "professional": "light",
+    "modern": "light",
+}
+
+BUILT_IN_THEMES = PUBLIC_BUILT_IN_THEMES
 
 
 def get_theme(name: str, **overrides: Any) -> BaseTheme:
@@ -400,12 +443,24 @@ def get_theme(name: str, **overrides: Any) -> BaseTheme:
     Raises:
         KeyError: If theme not found.
     """
-    if name not in BUILT_IN_THEMES:
+    if name in THEME_ALIASES:
+        name = THEME_ALIASES[name]
+    elif name in DEPRECATED_THEME_ALIASES:
+        target = DEPRECATED_THEME_ALIASES[name]
+        warnings.warn(
+            f"Theme '{name}' is deprecated and maps to '{target}'. "
+            f"Available public themes: {list_themes()}",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        name = target
+
+    if name not in PUBLIC_BUILT_IN_THEMES:
         raise KeyError(
             f"Theme '{name}' not found. "
-            f"Available: {list(BUILT_IN_THEMES.keys())}"
+            f"Available: {list_themes()}"
         )
-    return BUILT_IN_THEMES[name](**overrides)
+    return PUBLIC_BUILT_IN_THEMES[name](**overrides)
 
 
 def list_themes() -> list[str]:
@@ -414,4 +469,4 @@ def list_themes() -> list[str]:
     Returns:
         List of theme names.
     """
-    return list(BUILT_IN_THEMES.keys())
+    return list(PUBLIC_BUILT_IN_THEMES.keys())

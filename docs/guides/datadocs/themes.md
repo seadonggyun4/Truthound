@@ -1,17 +1,16 @@
 # Themes
 
-Truthound Data Docs supports 6 built-in themes and full customization.
+Truthound Data Docs supports three public built-in themes and full customization. The built-in themes are optimized for Korean public-sector and research-style A4 reports in both HTML and PDF output.
 
 ## Built-in Themes
 
 | Theme | Description | Best For |
 |-------|-------------|----------|
-| `default` | Clean and professional default theme | General use |
-| `light` | Light colors with subtle shadows | Printing, bright environments |
-| `dark` | Dark mode with vivid colors | Night work, presentations |
-| `minimal` | Minimalist, content-focused | Concise documentation |
-| `modern` | Apple style, vibrant colors | Marketing, demos |
-| `professional` | Corporate style, calm colors | Business reports (default) |
+| `light` | Korean public/research A4 report style and default theme | Printed reports, formal reviews, research deliverables |
+| `dark` | Dark report style with the same A4 information structure | Screen review in dark environments |
+| `minimal` | Low-chroma formal A4 report style | Concise internal reports and monochrome printing |
+
+`default` remains a hidden compatibility alias for `light`. `professional` and `modern` are deprecated aliases for `light` for one release and are not returned by public theme listing APIs.
 
 ## Theme Usage
 
@@ -36,10 +35,10 @@ from truthound.datadocs import (
 )
 
 # List available themes
-print(get_available_themes())  # ['default', 'light', 'dark', 'minimal', 'modern', 'professional']
+print(get_available_themes())  # ['light', 'dark', 'minimal']
 
 # Specify theme by string
-builder = HTMLReportBuilder(theme="professional")
+builder = HTMLReportBuilder(theme="light")
 
 # Specify theme by enum
 builder = HTMLReportBuilder(theme=ReportTheme.DARK)
@@ -222,14 +221,14 @@ html = builder.build(profile_dict)
 from truthound.datadocs.themes import get_theme
 
 # Get existing theme
-base_theme = get_theme("professional")
+base_theme = get_theme("light")
 
 # Create new theme by changing only colors
 from dataclasses import replace
 
 custom_theme = replace(
     base_theme,
-    name="my_professional",
+    name="my_report_theme",
     colors=replace(
         base_theme.colors,
         primary="#e63946",
@@ -375,10 +374,10 @@ from truthound.datadocs.themes import (
 )
 
 # List themes
-themes = get_available_themes()  # ['default', 'light', 'dark', ...]
+themes = get_available_themes()  # ['light', 'dark', 'minimal']
 
 # Get theme
-theme = get_theme("professional")
+theme = get_theme("light")
 
 # Get with custom overrides
 theme = get_theme("dark", colors=ThemeColors(primary="#ff0000"))
@@ -394,9 +393,7 @@ print(THEMES.keys())
 from truthound.datadocs import (
     LIGHT_THEME,
     DARK_THEME,
-    PROFESSIONAL_THEME,
     MINIMAL_THEME,
-    MODERN_THEME,
 )
 
 # Direct usage

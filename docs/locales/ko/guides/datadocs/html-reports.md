@@ -11,7 +11,7 @@ from truthound.datadocs import generate_html_report, HTMLReportBuilder
 html = generate_html_report(
     profile=profile_dict,
     title="Data Quality Report",
-    theme="professional",
+    theme="light",
     output_path="report.html",
 )
 
@@ -35,7 +35,7 @@ html = generate_report_from_file(
 ```python
 from truthound.datadocs import HTMLReportBuilder, ReportTheme
 
-builder = HTMLReportBuilder(theme=ReportTheme.PROFESSIONAL)
+builder = HTMLReportBuilder(theme=ReportTheme.LIGHT)
 html = builder.build(
     profile=profile_dict,
     title="My Data Report",
@@ -149,7 +149,7 @@ html = generate_html_report(
     profile=profile_dict,        # TableProfile dict or object
     title="Data Quality Report", # Report title
     subtitle="",                 # Subtitle
-    theme="professional",        # Theme name or ReportTheme
+    theme="light",        # Theme name or ReportTheme
     output_path="report.html",   # Save path (optional)
 )
 ```
@@ -198,7 +198,7 @@ html = generate_html_report(
     profile=profile.to_dict(),
     title="Customer Data Quality Report",
     subtitle="Q4 2025 Analysis",
-    theme="professional",
+    theme="light",
     output_path="customer_report.html",
 )
 
@@ -271,7 +271,7 @@ config = ReportConfig(logo_base64=f"data:image/png;base64,{logo_b64}")
 ```python
 @dataclass
 class ReportConfig:
-    theme: ReportTheme = ReportTheme.PROFESSIONAL
+    theme: ReportTheme = ReportTheme.LIGHT
     custom_theme: ThemeConfig | None = None
     chart_library: ChartLibrary = ChartLibrary.APEXCHARTS
     sections: list[SectionType] = [

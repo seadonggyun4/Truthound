@@ -42,7 +42,7 @@ CLI 명령 실행에서 CSV, Parquet을(를) 다루는 항목입니다:
 | CLI 명령 실행에서 `--output`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 `-o`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 None을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | Output 파일 path |
 | CLI 명령 실행에서 `--title`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 `-t`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 `Data Profile Report`, Data, Profile, Report을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | 리포트 title |
 | CLI 명령 실행에서 `--subtitle`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 `-s`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 `""`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | 리포트 subtitle |
-| CLI 명령 실행에서 `--theme`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | | CLI 명령 실행에서 `professional`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 Theme을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. |
+| `--theme` | | `light` | Theme (light, dark, minimal) |
 | CLI 명령 실행에서 `--format`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 `-f`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 `html`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 Output을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. |
 
 ## Description
@@ -108,18 +108,18 @@ truthound docs generate profile.json \
   -o quarterly_report.html \
   --title "Q4 2025 Data Quality Report" \
   --subtitle "Customer Analytics Pipeline" \
-  --theme professional
+  --theme light
 ```
 
 ## Themes
 
 | CLI 명령 실행에서 Theme을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 Description을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 Best을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. |
 |-------|-------------|----------|
-| CLI 명령 실행에서 `light`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 Clean을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 Day을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. |
-| CLI 명령 실행에서 `dark`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 Dark을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 Night을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. |
-| CLI 명령 실행에서 `professional`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 Corporate을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | Business 리포트 |
-| CLI 명령 실행에서 `minimal`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 Minimalist을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 Simple을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. |
-| CLI 명령 실행에서 `modern`을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 Contemporary을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. | CLI 명령 실행에서 Marketing을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다. |
+| `light` | 한국 공공기관/연구용 A4 보고서 스타일이며 기본 테마 | 인쇄 보고서, 공식 검토 |
+| `dark` | 같은 A4 정보 구조를 유지하는 다크 보고서 스타일 | 어두운 환경의 화면 검토 |
+| `minimal` | 흑백/저채도 중심의 간결한 A4 보고서 스타일 | 내부 보고서, 흑백 인쇄 |
+
+`default`는 `light`의 hidden alias입니다. `professional`과 `modern`은 한 릴리스 동안 `light`로 매핑되는 deprecated alias이며 공개 테마 목록에는 표시하지 않습니다.
 
 ## Chart Rendering
 
@@ -163,7 +163,7 @@ Generated 리포트 include:
   run: truthound profile data.csv --format json -o profile.json
 
 - name: Generate Report
-  run: truthound docs generate profile.json -o report.html --theme professional
+  run: truthound docs generate profile.json -o report.html --theme light
 
 - name: Upload Artifact
   uses: actions/upload-artifact@v4
@@ -188,7 +188,7 @@ truthound docs generate profile.json \
 
 ```bash
 # Generate reports in multiple themes
-for theme in light dark professional; do
+for theme in light dark minimal; do
   truthound docs generate profile.json \
     -o "report_${theme}.html" \
     --theme $theme
@@ -202,7 +202,7 @@ done
 truthound docs generate profile.json \
   -o report.pdf \
   --format pdf \
-  --theme professional \
+  --theme light \
   --title "Monthly Data Quality Summary"
 ```
 
