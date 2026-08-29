@@ -58,7 +58,69 @@ builder.save(html, "report.html")
 For localized reports, pass `language="ko"` to `HTMLReportBuilder` or
 `generate_html_report`. This localizes the built-in table of contents, section
 titles, metric labels, table headers, chart titles, footer text, and PDF cover
-metadata while preserving user-provided titles and source column names.
+metadata. Framework-generated alert titles, alert messages, suggestions, and
+recommendations are localized as report narrative rather than left as dashboard
+phrases.
+
+Truthound preserves source and technical identifiers by default. Column names,
+validator ids such as `not_null`, inferred or physical type ids such as
+`integer`, pattern ids such as `email`, and source sample values remain unchanged
+so that the report can be traced back to the profile and validation model. The
+surrounding labels and explanatory sentences are localized.
+
+## Public/Research Report Structure
+
+The A4 Data Docs output is structured as a public-sector and research-style
+report rather than a dashboard dump. HTML and PDF share the same information
+architecture:
+
+- cover and metadata
+- executive summary with purpose, data overview, key findings, risks, priority
+  actions, and limitations
+- non-table table of contents with leader dots in PDF output
+- chapter-style body sections for analysis overview, data quality diagnostic
+  results, column-level diagnostics, detected patterns and risk factors, and
+  recommendations
+- chapter lead paragraphs that connect the interpretation text to numbered
+  tables, figures, and appendices
+- stable report-object numbering for tables, figures, chapters, and appendices
+- quality framework mapping that explains which profile signals support each
+  data quality dimension and which dimensions require additional input
+- appendices for metric definitions, formulae, execution metadata, and the full
+  column profile
+- a quality coverage appendix that separates measured dimensions from
+  dimensions that require business rules, reference data, or freshness metadata
+- a methodology appendix that records the alert thresholds used for high
+  missing values, constant columns, low uniqueness, duplicate rows, and quality
+  score interpretation limits
+
+The quality framework mapping is an interpretation layer. It preserves the
+existing Truthound profile and validation calculations and does not claim that
+business accuracy, timeliness, or domain consistency were measured unless the
+input profile provides those signals.
+
+Alert thresholds are maintained from the same report policy source used by the
+alert generator. That keeps the visible methodology appendix aligned with the
+actual warning behavior in generated reports.
+
+Generated appendices use reproducibility metadata such as package version,
+Python version, platform, selected theme, language, source label, and a metadata
+fingerprint. They do not embed raw input data in the fingerprint.
+Report titles, subtitles, source labels, captions, and generated report-object
+text are escaped before rendering, while explicit `custom_css` and `custom_js`
+configuration remains available for trusted report customization.
+
+The report body cross-references generated objects such as `Table 1`,
+`Figure 2`, and `Appendix C` so that readers can move from interpretation to
+supporting evidence. Repeating a table or figure number in narrative text is
+intentional; the canonical object number remains attached to the table or figure
+caption. Report object references are registered before rendering so generated
+narrative does not point to an object that is absent from the report structure.
+
+The sample bundle contract generates one Korean A4 HTML report for each public
+theme: `light`, `dark`, and `minimal`. The sample smoke keeps the report title,
+table/figure/appendix numbering, methodology appendix, Korean typography, and
+localized alert narrative stable without checking in binary golden images.
 
 ### Detailed Configuration with ReportConfig
 

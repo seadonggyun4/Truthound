@@ -10,7 +10,17 @@ from pathlib import Path
 import pytest
 
 from truthound.datadocs import HTMLReportBuilder, ReportTheme, export_to_pdf
+from truthound.datadocs.base import ReportConfig, ReportMetadata, ReportSpec, SectionSpec, SectionType
 from truthound.datadocs.builder import generate_html_report
+from truthound.datadocs.i18n import get_supported_locales
+from truthound.datadocs.report_document import (
+    ALERT_THRESHOLDS,
+    QUALITY_DIMENSION_DEFINITIONS,
+    CaptionRegistry,
+    ReportObjectRegistry,
+    ResearchReportDocument,
+)
+from truthound.datadocs.report_renderers import ReportDocumentRenderer
 
 from .fixtures import PUBLIC_REPORT_THEMES, sample_a4_report_profile
 
@@ -31,7 +41,7 @@ def _skip_or_fail_pdf_dependency(message: str, *, require_env: str = REQUIRE_PDF
 
 def _assert_a4_report_visual_markers(html: str, theme: str) -> None:
     assert "<!DOCTYPE html>" in html
-    assert "Truthound A4 Visual Smoke" in html
+    assert "Truthound A4 Visual Smoke" in html or "Truthound 데이터 품질 연구 보고서" in html
     assert (
         f'name="{theme}"' in html
         or f"theme-{theme}" in html
@@ -48,6 +58,8 @@ def _assert_a4_report_visual_markers(html: str, theme: str) -> None:
     assert "table-header-group" in html
     assert ".summary-box" in html
     assert ".report-caption" in html
+    assert ".quality-coverage-table" in html
+    assert ".methodology-table" in html
     assert "page-break-inside: avoid" in html
     assert "break-inside: avoid" in html
     assert "Column Summary" in html or "컬럼 요약" in html
@@ -104,6 +116,69 @@ def _assert_optional_pdf_page_render(output_path: Path, tmp_path: Path) -> None:
     assert rendered_page.stat().st_size > 10_000
 
 
+def _label(key: str, default: str, **params) -> str:
+    if params:
+        return default.format(**params)
+    return default
+
+
+def _report_spec_for_document_model() -> ReportSpec:
+    profile = sample_a4_report_profile()
+    return ReportSpec(
+        metadata=ReportMetadata(title="Truthound A4 Visual Smoke", data_source=profile["source"]),
+        config=ReportConfig(theme=ReportTheme.LIGHT, language="en"),
+        sections=[
+            SectionSpec(section_type=SectionType.OVERVIEW, title="Overview"),
+            SectionSpec(section_type=SectionType.QUALITY, title="Data Quality"),
+            SectionSpec(section_type=SectionType.COLUMNS, title="Column Details"),
+            SectionSpec(section_type=SectionType.DISTRIBUTION, title="Value Distribution"),
+            SectionSpec(section_type=SectionType.RECOMMENDATIONS, title="Recommendations"),
+        ],
+        profile_data=profile,
+    )
+
+
+def _write_korean_sample_bundle(output_dir: Path, *, include_pdf: bool = False) -> list[Path]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    profile = sample_a4_report_profile()
+    artifacts: list[Path] = []
+    for theme in PUBLIC_REPORT_THEMES:
+        html_path = output_dir / f"truthound-research-{theme}-ko.html"
+        html = generate_html_report(
+            profile,
+            title="Truthound 데이터 품질 연구 보고서",
+            subtitle=f"{theme} 테마 한국어 A4 보고서 샘플",
+            theme=theme,
+            language="ko",
+        )
+        html_path.write_text(html, encoding="utf-8")
+        artifacts.append(html_path)
+        if include_pdf:
+            pdf_path = output_dir / f"truthound-research-{theme}-ko.pdf"
+            export_to_pdf(
+                profile,
+                pdf_path,
+                title="Truthound 데이터 품질 연구 보고서",
+                subtitle=f"{theme} 테마 한국어 A4 보고서 샘플",
+                theme=theme,
+                language="ko",
+            )
+            artifacts.append(pdf_path)
+    readme_path = output_dir / "README.md"
+    readme_path.write_text(
+        "# Truthound 한국어 A4 보고서 샘플\n\n"
+        "이 폴더의 HTML/PDF는 light, dark, minimal 테마의 한국어 A4 보고서 샘플입니다.\n\n"
+        "- 표/그림/부록 번호 체계\n"
+        "- 목차의 비테이블 leader layout\n"
+        "- 품질 차원 매핑\n"
+        "- 진단 기준 및 임계값 부록\n"
+        "- 한국어 공공/연구 보고서형 A4 print CSS\n",
+        encoding="utf-8",
+    )
+    artifacts.append(readme_path)
+    return artifacts
+
+
 @pytest.mark.parametrize("theme", PUBLIC_REPORT_THEMES)
 def test_public_themes_render_a4_html_visual_smoke(theme: str) -> None:
     html = generate_html_report(
@@ -114,6 +189,276 @@ def test_public_themes_render_a4_html_visual_smoke(theme: str) -> None:
     )
 
     _assert_a4_report_visual_markers(html, theme)
+
+
+@pytest.mark.parametrize("theme", PUBLIC_REPORT_THEMES)
+def test_public_themes_render_korean_research_structure_smoke(theme: str) -> None:
+    html = generate_html_report(
+        sample_a4_report_profile(),
+        title="Truthound 데이터 품질 연구 보고서",
+        subtitle=f"{theme} 테마 한국어 A4 보고서 샘플",
+        theme=theme,
+        language="ko",
+    )
+
+    _assert_a4_report_visual_markers(html, theme)
+    for expected in (
+        "요약문",
+        "목차",
+        "제1장 분석 개요",
+        "부록 E. 진단 기준 및 임계값",
+        "[표 6] 진단 기준 및 임계값",
+        "품질 점수 해석 한계",
+        "Truthound 데이터 품질 프레임워크",
+    ):
+        assert expected in html
+    for leaked_label in (
+        ">Executive Summary<",
+        ">Table of Contents<",
+        ">Appendix E.",
+        "appendix.methodology",
+    ):
+        assert leaked_label not in html
+
+
+def test_korean_sample_bundle_contract_generates_all_public_theme_html(tmp_path: Path) -> None:
+    artifacts = _write_korean_sample_bundle(tmp_path, include_pdf=False)
+
+    expected_names = {"README.md"} | {f"truthound-research-{theme}-ko.html" for theme in PUBLIC_REPORT_THEMES}
+    assert {artifact.name for artifact in artifacts} == expected_names
+    for theme in PUBLIC_REPORT_THEMES:
+        html_path = tmp_path / f"truthound-research-{theme}-ko.html"
+        html = html_path.read_text(encoding="utf-8")
+        assert html_path.stat().st_size > 40_000
+        assert "Truthound 데이터 품질 연구 보고서" in html
+        assert "부록 E. 진단 기준 및 임계값" in html
+        assert "행 수 &gt; 100" in html
+        assert "Low Cardinality" not in html
+        assert "Only 17 unique values" not in html
+    readme = (tmp_path / "README.md").read_text(encoding="utf-8")
+    assert "light, dark, minimal" in readme
+    assert "진단 기준 및 임계값 부록" in readme
+
+
+def test_research_report_document_model_builds_stable_toc_and_chapters() -> None:
+    document = ResearchReportDocument(_label, language="en", theme_name="light")
+    spec = _report_spec_for_document_model()
+
+    chapters = document.chapter_groups(spec)
+    toc_entries = document.toc_entries(chapters)
+
+    assert [chapter.number for chapter in chapters] == [1, 2, 3, 4, 5]
+    assert [chapter.title for chapter in chapters] == [
+        "Chapter 1. Analysis Overview",
+        "Chapter 2. Data Quality Diagnostic Results",
+        "Chapter 3. Column-Level Diagnostics",
+        "Chapter 4. Detected Patterns and Risk Factors",
+        "Chapter 5. Recommendations",
+    ]
+    assert [entry.target_id for entry in toc_entries] == [
+        "executive-summary",
+        "chapter-1",
+        "chapter-2",
+        "chapter-3",
+        "chapter-4",
+        "chapter-5",
+        "appendix-a",
+        "appendix-b",
+        "appendix-c",
+        "appendix-d",
+        "appendix-e",
+    ]
+
+
+def test_report_document_renderer_owns_non_table_toc_html() -> None:
+    document = ResearchReportDocument(_label, language="en", theme_name="light")
+    renderer = ReportDocumentRenderer(document)
+    chapters = document.chapter_groups(_report_spec_for_document_model())
+
+    toc_html = renderer.render_toc(chapters, for_pdf=True)
+
+    assert "<table" not in toc_html
+    assert "<tr" not in toc_html
+    assert "<td" not in toc_html
+    assert 'class="toc-list-professional"' in toc_html
+    assert 'class="toc-row-professional"' in toc_html
+    assert 'class="toc-leader"' in toc_html
+    assert 'data-target="#chapter-1"' in toc_html
+    assert "Chapter 1. Analysis Overview" in toc_html
+    assert "Appendix D. Quality Dimension Coverage and Limitations" in toc_html
+    assert "Appendix E. Diagnostic Criteria and Thresholds" in toc_html
+
+
+def test_report_document_renderer_escapes_toc_and_chapter_text() -> None:
+    def unsafe_label(key: str, default: str, **params) -> str:
+        if key == "report.executive_summary":
+            return '<script>alert("toc")</script>'
+        if key == "chapter.analysis_overview":
+            return '<img src=x onerror="alert(1)">'
+        if params:
+            return default.format(**params)
+        return default
+
+    document = ResearchReportDocument(unsafe_label, language="en", theme_name="light")
+    renderer = ReportDocumentRenderer(document)
+    chapters = document.chapter_groups(_report_spec_for_document_model())
+    section_html = {SectionType.OVERVIEW: "<section>trusted section renderer output</section>"}
+
+    toc_html = renderer.render_toc(chapters[:1], for_pdf=True)
+    chapter_html = renderer.render_chapters(chapters[:1], section_html)
+
+    assert "<script>" not in toc_html
+    assert "&lt;script&gt;" in toc_html
+    assert "<img" not in toc_html
+    assert "&lt;img" in toc_html
+    assert "<img" not in chapter_html
+    assert "&lt;img" in chapter_html
+
+
+def test_quality_dimension_definitions_are_the_single_framework_source() -> None:
+    assert [definition.dimension_default for definition in QUALITY_DIMENSION_DEFINITIONS] == [
+        "Completeness",
+        "Uniqueness",
+        "Validity",
+        "Accuracy",
+        "Timeliness",
+    ]
+    assert [definition.status_default for definition in QUALITY_DIMENSION_DEFINITIONS] == [
+        "Measured",
+        "Measured",
+        "Partially measured",
+        "Input required",
+        "Input required",
+    ]
+    assert all(definition.limitation_key.endswith(".limitation") for definition in QUALITY_DIMENSION_DEFINITIONS)
+
+
+def test_caption_registry_localizes_report_object_numbers() -> None:
+    english_registry = ReportObjectRegistry()
+    korean_registry = ReportObjectRegistry()
+    korean = CaptionRegistry(
+        lambda key, default, **params: "[표 {number}] {title}".format(**params)
+        if key == "report.table_caption"
+        else "[그림 {number}] {title}".format(**params)
+        if key == "report.figure_caption"
+        else default,
+        language="ko",
+        registry=korean_registry,
+    )
+    english = CaptionRegistry(_label, language="en", registry=english_registry)
+
+    assert english.chapter(2, "chapter.quality_results", "Data Quality Diagnostic Results") == (
+        "Chapter 2. Data Quality Diagnostic Results"
+    )
+    assert english.appendix("A", "appendix.metrics", "Metric Definitions and Formulae") == (
+        "Appendix A. Metric Definitions and Formulae"
+    )
+    assert english.table(1, "Column Summary") == "Table 1. Column Summary"
+    assert korean.chapter(2, "chapter.quality_results", "데이터 품질 진단 결과") == "제2장 데이터 품질 진단 결과"
+    assert korean.appendix("A", "appendix.metrics", "지표 정의 및 산식") == "부록 A. 지표 정의 및 산식"
+    assert korean.table(1, "컬럼 요약") == "[표 1] 컬럼 요약"
+    assert korean.figure(1, "데이터 유형 분포") == "[그림 1] 데이터 유형 분포"
+    assert english_registry.reference("chapter", 2) == "Chapter 2. Data Quality Diagnostic Results"
+    assert korean_registry.reference("table", 1) == "[표 1] 컬럼 요약"
+
+
+def test_report_object_registry_rejects_missing_and_conflicting_references() -> None:
+    registry = ReportObjectRegistry()
+    registry.register("table", 1, "Column Summary", "Table 1. Column Summary", "table-1")
+
+    assert registry.reference("table", 1) == "Table 1. Column Summary"
+
+    with pytest.raises(KeyError):
+        registry.reference("figure", 99)
+
+    with pytest.raises(ValueError):
+        registry.register("table", 1, "Different", "Table 1. Different", "table-1")
+
+
+def test_quality_framework_model_separates_measured_and_input_required_dimensions() -> None:
+    document = ResearchReportDocument(_label, language="en", theme_name="light")
+
+    rows = document.quality_rows()
+
+    assert [row.dimension for row in rows] == [
+        "Completeness",
+        "Uniqueness",
+        "Validity",
+        "Accuracy",
+        "Timeliness",
+    ]
+    assert [row.status for row in rows] == [
+        "Measured",
+        "Measured",
+        "Partially measured",
+        "Input required",
+        "Input required",
+    ]
+
+
+def test_quality_coverage_appendix_d_keeps_unmeasured_dimensions_explicit() -> None:
+    document = ResearchReportDocument(_label, language="en", theme_name="light")
+
+    coverage = document.quality_coverage_rows()
+
+    assert coverage[-2][0] == "Accuracy"
+    assert coverage[-2][1] == "Input required"
+    assert "reference data" in coverage[-2][2]
+    assert coverage[-1][0] == "Timeliness"
+    assert coverage[-1][1] == "Input required"
+    assert "freshness metadata" in coverage[-1][2]
+
+
+def test_report_object_numbering_has_no_collisions_in_korean_pdf_ready_html() -> None:
+    html = HTMLReportBuilder(theme=ReportTheme.LIGHT, language="ko", _use_svg=True).build_for_pdf(
+        sample_a4_report_profile(),
+        title="Truthound A4 Visual Smoke",
+        subtitle="한국어 번호 체계 regression fixture",
+    )
+
+    for number in range(1, 6):
+        assert html.count(f'class="table-title">[표 {number}]') == 1
+        assert f"[표 {number}]" in html
+    assert html.count('class="table-title">[표 6] 진단 기준 및 임계값') == 1
+    for number in range(1, 4):
+        assert html.count(f"[그림 {number}]") >= 1
+    assert html.index("부록 A.") < html.index("부록 B.") < html.index("부록 C.") < html.index("부록 D.") < html.index("부록 E.")
+
+
+def test_appendix_fingerprint_uses_metadata_not_raw_profile_values() -> None:
+    spec = _report_spec_for_document_model()
+    document = ResearchReportDocument(_label, language="en", theme_name="light")
+    changed_raw_values = dict(spec.profile_data)
+    changed_raw_values["columns"] = [
+        {**column, "sample_values": ["private-value"]}
+        for column in changed_raw_values["columns"]
+    ]
+    changed_raw_spec = ReportSpec(
+        metadata=spec.metadata,
+        config=spec.config,
+        sections=spec.sections,
+        profile_data=changed_raw_values,
+    )
+
+    assert document.input_fingerprint(spec) == document.input_fingerprint(changed_raw_spec)
+
+
+def test_pdf_ready_html_escapes_user_supplied_metadata() -> None:
+    profile = {
+        **sample_a4_report_profile(),
+        "source": 'source.csv"><script>alert("source")</script>',
+    }
+    html = HTMLReportBuilder(theme=ReportTheme.LIGHT, language="ko", _use_svg=True).build_for_pdf(
+        profile,
+        title='품질 보고서 <script>alert("title")</script>',
+        subtitle='검증 <img src=x onerror="alert(1)">',
+    )
+
+    assert "<script>alert" not in html
+    assert '<img src=x onerror="alert(1)">' not in html
+    assert "&lt;script&gt;alert" in html
+    assert "&lt;img src=x" in html
+    assert "source.csv&quot;&gt;&lt;script&gt;" in html
 
 
 def test_pdf_ready_html_uses_svg_and_a4_report_css() -> None:
@@ -200,6 +545,282 @@ def test_korean_locale_pdf_ready_html_uses_korean_labels() -> None:
     assert ">Dataset Size<" not in html
 
 
+def test_korean_report_alert_and_recommendation_narrative_is_localized() -> None:
+    html = generate_html_report(
+        sample_a4_report_profile(),
+        title="Truthound A4 Visual Smoke",
+        subtitle="한국어 내러티브 regression fixture",
+        theme="light",
+        language="ko",
+    )
+
+    for expected in (
+        "'region' 컬럼의 고유값 수가 낮습니다",
+        "전체 2,480행 중 서로 다른 값이 17개로 확인되었습니다",
+        "'farm_id' 컬럼에 'not_null' 검증 규칙 적용을 검토하십시오",
+        "'region' 컬럼에 'allowed_values' 검증 규칙 적용을 검토하십시오",
+        "integer",
+        "numeric",
+        "contact_email",
+        "user@example.test",
+    ):
+        assert expected in html
+
+    for leaked_phrase in (
+        "Low Cardinality",
+        "Only 17 unique values",
+        "Consider",
+    ):
+        assert leaked_phrase not in html
+
+
+def test_korean_report_alert_narrative_covers_high_missing_constant_and_duplicates() -> None:
+    profile = sample_a4_report_profile()
+    profile["duplicate_row_ratio"] = 0.125
+    profile["columns"] = [
+        {
+            **column,
+            "null_ratio": 0.72,
+            "is_constant": True,
+            "distinct_count": 1,
+            "unique_ratio": 0.0004,
+        }
+        if column["name"] == "reported_revenue"
+        else column
+        for column in profile["columns"]
+    ]
+
+    html = HTMLReportBuilder(theme=ReportTheme.LIGHT, language="ko", _use_svg=True).build_for_pdf(
+        profile,
+        title="Truthound A4 Visual Smoke",
+        subtitle="한국어 경고 문장 regression fixture",
+    )
+
+    for expected in (
+        "'reported_revenue' 컬럼의 결측값 비율이 높습니다",
+        "해당 컬럼의 결측값 비율은 72.0%로 확인되었습니다",
+        "수집 기준, 결측 대체 기준 또는 제외 기준을 검토하십시오",
+        "'reported_revenue' 컬럼이 단일 값으로 구성되어 있습니다",
+        "해당 컬럼은 서로 다른 값이 1개로 확인되었습니다",
+        "분석 목적상 정보성이 낮은 컬럼인지 검토하십시오",
+        "중복 행 비율이 기준보다 높습니다",
+        "전체 행 중 12.5%가 중복 행으로 확인되었습니다",
+        "중복 제거 기준과 원천 데이터 적재 절차를 검토하십시오",
+        "데이터 처리 절차에 중복 행 탐지 및 처리 기준을 반영하십시오",
+        "결측값 비율이 높은 컬럼의 수집 기준과 결측 대체 기준을 점검하십시오: reported_revenue",
+    ):
+        assert expected in html
+
+    for leaked_phrase in (
+        "High Missing Values",
+        "Significant Duplicate Rows",
+        "Column contains only one unique value",
+        "Consider imputation or removal",
+        "Consider removing if not informative",
+        "Consider deduplication",
+        "Consider implementing duplicate row detection",
+        "Review data collection for columns with high missing values",
+    ):
+        assert leaked_phrase not in html
+
+
+def test_english_report_alert_and_recommendation_narrative_stays_compatible() -> None:
+    html = generate_html_report(
+        sample_a4_report_profile(),
+        title="Truthound A4 Visual Smoke",
+        subtitle="English narrative regression fixture",
+        theme="light",
+        language="en",
+    )
+
+    assert "Low Cardinality in 'region'" in html
+    assert "Only 17 unique values in 2,480 rows" in html
+    assert "Add not_null validator for column 'farm_id'" in html
+    assert "'region' 컬럼의 고유값 수가 낮습니다" not in html
+    assert "검증 규칙 적용을 검토하십시오" not in html
+
+
+def test_korean_pdf_toc_uses_non_table_leader_layout() -> None:
+    html = HTMLReportBuilder(theme=ReportTheme.LIGHT, language="ko", _use_svg=True).build_for_pdf(
+        sample_a4_report_profile(),
+        title="Truthound A4 Visual Smoke",
+        subtitle="한국어 PDF 목차 regression fixture",
+    )
+
+    toc_start = html.index('class="report-toc-professional"')
+    toc_end = html.index("</nav>", toc_start)
+    toc_html = html[toc_start:toc_end]
+
+    assert "<table" not in toc_html
+    assert "<tr" not in toc_html
+    assert "<td" not in toc_html
+    assert 'class="toc-list-professional"' in toc_html
+    assert 'class="toc-row-professional"' in toc_html
+    assert 'class="toc-link-professional"' in toc_html
+    assert 'class="toc-number"' in toc_html
+    assert 'class="toc-entry"' in toc_html
+    assert 'class="toc-leader"' in toc_html
+    assert 'class="toc-page"' in toc_html
+    assert "개요" in toc_html
+    assert "데이터 품질" in toc_html
+    assert "컬럼별 상세 진단" in toc_html
+
+    assert ".toc-link-professional" in html
+    assert "display: flex" in html
+    assert "word-break: keep-all" in html
+    assert "target-counter(attr(data-target), page)" in html
+    assert ".report-chapter" in html
+    assert "page-break-inside: auto" in html
+    assert ".report-section" in html
+
+
+def test_research_report_structure_renders_in_korean_pdf_ready_html() -> None:
+    html = HTMLReportBuilder(theme=ReportTheme.LIGHT, language="ko", _use_svg=True).build_for_pdf(
+        sample_a4_report_profile(),
+        title="Truthound A4 Visual Smoke",
+        subtitle="한국어 연구 보고서 구조 regression fixture",
+    )
+
+    for expected in (
+        "요약문",
+        "분석 목적",
+        "입력 데이터 개요",
+        "주요 결과",
+        "주요 위험",
+        "우선 조치",
+        "검토 한계",
+        "제1장 분석 개요",
+        "제2장 데이터 품질 진단 결과",
+        "제3장 컬럼별 상세 진단",
+        "제4장 이상 패턴 및 위험 요인",
+        "제5장 개선 권고사항",
+        "품질 프레임워크 매핑",
+        "측정됨",
+        "입력 필요",
+        "부록 A. 지표 정의 및 산식",
+        "부록 B. 실행 환경 및 재현 정보",
+        "부록 C. 전체 컬럼 프로파일",
+        "부록 D. 품질 차원별 측정 가능성 및 한계",
+        "부록 E. 진단 기준 및 임계값",
+        "Truthound 버전",
+        "입력 fingerprint",
+        "[표 1] 컬럼 요약",
+        "[표 2] 품질 차원 매핑",
+        "[표 3] 지표 정의",
+        "[표 4] 전체 컬럼 프로파일",
+        "[표 5] 품질 차원별 측정 가능성",
+        "[표 6] 진단 기준 및 임계값",
+        "[그림 1] 데이터 유형 분포",
+        "[그림 2] 결측값 상위 컬럼",
+        "[그림 3] 고유성 상위 컬럼",
+        "컬럼 단위 구조는 [표 1] 컬럼 요약에 정리하였으며",
+        "[표 2] 품질 차원 매핑에서는 측정된 근거와 추가 입력이 필요한 품질 차원을 구분하였습니다",
+        "감사 목적의 전체 컬럼 프로파일은 부록 C. 전체 컬럼 프로파일에 수록하였습니다",
+        "지표 정의와 재현성 메타데이터는 각각 부록 A. 지표 정의 및 산식 및 부록 B. 실행 환경 및 재현 정보에 수록하였습니다",
+        "본 부록은 본문에서 사용한 지표의 의미와 해석 경계를 정의합니다",
+        "원본 입력 데이터를 노출하지 않고 보고서 산출물을 재현하는 데 필요한 실행 메타데이터",
+        "원본 컬럼명과 기술 유형 식별자를 그대로 보존합니다",
+        "자동 생성 경고와 권고사항에 사용한 임계값 정책",
+        "높은 결측값 비율",
+        "&gt; 50%; &gt;= 80%",
+        "낮은 고유값 비율",
+        f"&lt; {ALERT_THRESHOLDS.low_uniqueness_threshold:.0%}; 행 수 &gt; {ALERT_THRESHOLDS.low_uniqueness_min_rows:,}",
+        "중복 행",
+        f"&gt; {ALERT_THRESHOLDS.duplicate_warning_threshold:.0%}",
+        "품질 점수는 프로파일 메타데이터를 요약하며",
+        "정확성은 권위 있는 기준 데이터 또는 업무 담당자 검토",
+        "시의성은 수집 시각, 기준 시점, 갱신 정책",
+    ):
+        assert expected in html
+
+    for leaked_label in (
+        ">Executive Summary<",
+        ">Purpose<",
+        ">Chapter 1.",
+        ">Appendix A.",
+        ">Appendix D.",
+        ">Appendix E.",
+        ">Input required<",
+        ">Accuracy requires<",
+        "chapter.analysis_overview.lead",
+        "appendix.metrics.lead",
+    ):
+        assert leaked_label not in html
+
+
+def test_research_report_structure_renders_in_default_english_html() -> None:
+    html = generate_html_report(
+        sample_a4_report_profile(),
+        title="Truthound A4 Visual Smoke",
+        subtitle="English research report structure regression fixture",
+        theme="minimal",
+    )
+
+    for expected in (
+        "Executive Summary",
+        "Purpose",
+        "Data Overview",
+        "Key Findings",
+        "Risks",
+        "Priority Actions",
+        "Limitations",
+        "Chapter 1. Analysis Overview",
+        "Chapter 2. Data Quality Diagnostic Results",
+        "Quality Framework Mapping",
+        "Input required",
+        "Appendix A. Metric Definitions and Formulae",
+        "Appendix B. Execution Environment and Reproducibility",
+        "Appendix C. Full Column Profile",
+        "Appendix D. Quality Dimension Coverage and Limitations",
+        "Appendix E. Diagnostic Criteria and Thresholds",
+        "Truthound version",
+        "Input fingerprint",
+        "Table 1. Column Summary",
+        "Table 2. Quality dimension mapping",
+        "Table 5. Quality dimension coverage",
+        "Table 6. Diagnostic criteria and thresholds",
+        "Figure 1. Data Types Distribution",
+        "Column-level structure is summarized in Table 1. Column Summary",
+        "the quality dimension mapping in Table 2. Quality dimension mapping distinguishes measured evidence",
+        "The full audit-oriented column profile is provided in Appendix C. Full Column Profile",
+        "Metric definitions and reproducibility metadata are available in Appendix A. Metric Definitions and Formulae and Appendix B. Execution Environment and Reproducibility",
+        "This appendix defines the metrics used in the body of the report",
+        "without exposing raw input data",
+        "High missing values",
+        "&gt; 50%; &gt;= 80%",
+        "Low uniqueness",
+        f"&lt; {ALERT_THRESHOLDS.low_uniqueness_threshold:.0%}; rows &gt; {ALERT_THRESHOLDS.low_uniqueness_min_rows:,}",
+        "Quality score limitation",
+    ):
+        assert expected in html
+
+
+def test_research_report_structure_generates_for_all_supported_locales() -> None:
+    forbidden_raw_keys = (
+        "summary.",
+        "chapter.",
+        "appendix.",
+        "quality.framework.",
+        "quality.dimension.",
+    )
+
+    for locale in get_supported_locales():
+        html = generate_html_report(
+            sample_a4_report_profile(),
+            title="Truthound A4 Visual Smoke",
+            subtitle=f"{locale} locale research report structure regression fixture",
+            theme="light",
+            language=locale,
+        )
+        assert "executive-summary" in html
+        assert "report-chapter" in html
+        assert "quality-framework" in html
+        assert "report-appendix" in html
+        assert "input fingerprint" in html.lower() or "fingerprint" in html.lower()
+        for raw_key in forbidden_raw_keys:
+            assert raw_key not in html
+
+
 def test_pdf_export_visual_smoke_when_weasyprint_is_available(tmp_path) -> None:
     try:
         import weasyprint  # noqa: F401
@@ -223,6 +844,31 @@ def test_pdf_export_visual_smoke_when_weasyprint_is_available(tmp_path) -> None:
     assert len(pdf_bytes) > 5_000
     _assert_pdf_text_smoke(output_path)
     _assert_optional_pdf_page_render(output_path, tmp_path)
+
+
+def test_public_theme_pdf_exports_when_weasyprint_is_available(tmp_path: Path) -> None:
+    try:
+        import weasyprint  # noqa: F401
+    except (ImportError, OSError) as error:
+        _skip_or_fail_pdf_dependency(f"WeasyPrint is not available in this environment: {error}")
+
+    for theme in PUBLIC_REPORT_THEMES:
+        output_path = tmp_path / f"truthound-a4-{theme}-visual-smoke.pdf"
+        try:
+            export_to_pdf(
+                sample_a4_report_profile(),
+                output_path,
+                title="Truthound A4 Visual Smoke",
+                subtitle=f"{theme} theme generated PDF visual smoke",
+                theme=theme,
+            )
+        except ImportError as error:
+            _skip_or_fail_pdf_dependency(f"PDF system dependencies are not available: {error}")
+
+        pdf_bytes = output_path.read_bytes()
+        assert pdf_bytes.startswith(b"%PDF")
+        assert len(pdf_bytes) > 5_000
+        _assert_pdf_text_smoke(output_path)
 
 
 def test_pdf_smoke_require_env_turns_missing_dependency_into_failure(monkeypatch) -> None:

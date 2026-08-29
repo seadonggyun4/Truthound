@@ -212,6 +212,20 @@ TRUTHOUND_DATADOCS_REQUIRE_PDF_RENDER=1 pytest tests/datadocs/test_report_visual
 
 These flags make missing PDF dependencies fail the test instead of skipping it, so CI does not silently lose PDF coverage.
 
+The PDF smoke also exports each public report theme (`light`, `dark`, and
+`minimal`) when WeasyPrint is available. This keeps theme-specific PDF
+rendering from regressing while the default lightweight test environment can
+still run the HTML and PDF-ready structural smoke without system PDF
+dependencies.
+
+Release or benchmark gates that claim PDF coverage should run the smoke test in
+non-skip mode. On macOS runners that install Pango, Cairo, and GLib with
+Homebrew, set `DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib` when WeasyPrint
+cannot discover `libgobject` or related dynamic libraries. The smoke test also
+extracts text from the generated PDF, so the A4 report table of contents,
+chapter references, methodology appendix, and Korean localization markers remain
+visible in the PDF artifact rather than only in source HTML.
+
 ## Print CSS
 
 CSS optimized for PDF output is automatically applied.

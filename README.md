@@ -170,6 +170,10 @@ masked = th.mask(
 drift = compare({"score": [0.1, 0.2]}, {"score": [0.1, 0.8]})
 ```
 
+Data Docs는 A4 보고서형 HTML/PDF 산출물을 만들며, 공개 테마는 `light`,
+`dark`, `minimal`입니다. 보고서에는 번호가 붙은 표/그림/부록, 품질 차원
+매핑, 진단 기준 및 임계값 부록이 포함됩니다.
+
 ### CLI
 
 ```bash

@@ -8,7 +8,6 @@ a complete, self-contained HTML document.
 from __future__ import annotations
 
 import html
-import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -31,6 +30,8 @@ from truthound.datadocs.base import (
 from truthound.datadocs.themes import get_theme, THEMES
 from truthound.datadocs.charts import get_chart_renderer, CDN_URLS
 from truthound.datadocs.i18n import get_catalog
+from truthound.datadocs.report_document import ALERT_THRESHOLDS, ResearchReportDocument
+from truthound.datadocs.report_renderers import ReportDocumentRenderer
 from truthound.datadocs.sections import get_section_renderer
 from truthound.datadocs.styles import get_complete_stylesheet
 
@@ -203,9 +204,10 @@ class ProfileDataConverter:
             return corrs
         return []
 
-    def get_alerts(self) -> list[AlertSpec]:
+    def get_alerts(self, *, language: str = "en") -> list[AlertSpec]:
         """Generate alerts based on profile data."""
         alerts = []
+        ko = language.startswith("ko")
 
         for col in self.data.get("columns", []):
             name = col.get("name", "")
@@ -214,50 +216,79 @@ class ProfileDataConverter:
             is_constant = col.get("is_constant", False)
 
             # High null ratio alert
-            if null_ratio > 0.5:
+            if null_ratio > ALERT_THRESHOLDS.high_missing_warning_threshold:
+                title = f"High Missing Values in '{name}'"
+                message = f"Column has {null_ratio:.1%} missing values"
+                suggestion = "Consider imputation or removal"
+                if ko:
+                    title = f"'{name}' 컬럼의 결측값 비율이 높습니다"
+                    message = f"해당 컬럼의 결측값 비율은 {null_ratio:.1%}로 확인되었습니다"
+                    suggestion = "수집 기준, 결측 대체 기준 또는 제외 기준을 검토하십시오"
                 alerts.append(AlertSpec(
-                    title=f"High Missing Values in '{name}'",
-                    message=f"Column has {null_ratio:.1%} missing values",
-                    severity=SeverityLevel.WARNING if null_ratio < 0.8 else SeverityLevel.ERROR,
+                    title=title,
+                    message=message,
+                    severity=SeverityLevel.WARNING
+                    if null_ratio < ALERT_THRESHOLDS.high_missing_error_threshold
+                    else SeverityLevel.ERROR,
                     column=name,
                     metric="null_ratio",
                     value=null_ratio,
-                    threshold=0.5,
-                    suggestion="Consider imputation or removal",
+                    threshold=ALERT_THRESHOLDS.high_missing_warning_threshold,
+                    suggestion=suggestion,
                 ))
 
             # Constant column alert
             if is_constant:
+                title = f"Constant Column: '{name}'"
+                message = "Column contains only one unique value"
+                suggestion = "Consider removing if not informative"
+                if ko:
+                    title = f"'{name}' 컬럼이 단일 값으로 구성되어 있습니다"
+                    message = "해당 컬럼은 서로 다른 값이 1개로 확인되었습니다"
+                    suggestion = "분석 목적상 정보성이 낮은 컬럼인지 검토하십시오"
                 alerts.append(AlertSpec(
-                    title=f"Constant Column: '{name}'",
-                    message="Column contains only one unique value",
+                    title=title,
+                    message=message,
                     severity=SeverityLevel.INFO,
                     column=name,
-                    suggestion="Consider removing if not informative",
+                    suggestion=suggestion,
                 ))
 
             # Very low uniqueness (possible ID column issues)
-            if unique_ratio < 0.01 and not is_constant:
+            if unique_ratio < ALERT_THRESHOLDS.low_uniqueness_threshold and not is_constant:
                 row_count = self.data.get("row_count", 1)
-                if row_count > 100:
+                if row_count > ALERT_THRESHOLDS.low_uniqueness_min_rows:
+                    distinct_count = col.get("distinct_count", 0)
+                    title = f"Low Cardinality in '{name}'"
+                    message = f"Only {distinct_count} unique values in {row_count:,} rows"
+                    if ko:
+                        title = f"'{name}' 컬럼의 고유값 수가 낮습니다"
+                        message = f"전체 {row_count:,}행 중 서로 다른 값이 {distinct_count:,}개로 확인되었습니다"
                     alerts.append(AlertSpec(
-                        title=f"Low Cardinality in '{name}'",
-                        message=f"Only {col.get('distinct_count', 0)} unique values in {row_count:,} rows",
+                        title=title,
+                        message=message,
                         severity=SeverityLevel.INFO,
                         column=name,
                     ))
 
         # Duplicate rows alert
         dup_ratio = self.data.get("duplicate_row_ratio", 0)
-        if dup_ratio > 0.1:
+        if dup_ratio > ALERT_THRESHOLDS.duplicate_warning_threshold:
+            title = "Significant Duplicate Rows"
+            message = f"{dup_ratio:.1%} of rows are duplicates"
+            suggestion = "Consider deduplication"
+            if ko:
+                title = "중복 행 비율이 기준보다 높습니다"
+                message = f"전체 행 중 {dup_ratio:.1%}가 중복 행으로 확인되었습니다"
+                suggestion = "중복 제거 기준과 원천 데이터 적재 절차를 검토하십시오"
             alerts.append(AlertSpec(
-                title="Significant Duplicate Rows",
-                message=f"{dup_ratio:.1%} of rows are duplicates",
+                title=title,
+                message=message,
                 severity=SeverityLevel.WARNING,
                 metric="duplicate_ratio",
                 value=dup_ratio,
-                threshold=0.1,
-                suggestion="Consider deduplication",
+                threshold=ALERT_THRESHOLDS.duplicate_warning_threshold,
+                suggestion=suggestion,
             ))
 
         return alerts
@@ -272,7 +303,7 @@ class ProfileDataConverter:
             for v in validators[:2]:  # Limit per column
                 name = col.get("name", "")
                 if ko:
-                    recommendations.append(f"'{name}' 컬럼에 {v} 검증 규칙을 추가하세요")
+                    recommendations.append(f"'{name}' 컬럼에 '{v}' 검증 규칙 적용을 검토하십시오")
                 else:
                     recommendations.append(f"Add {v} validator for column '{name}'")
 
@@ -280,7 +311,7 @@ class ProfileDataConverter:
         dup_ratio = self.data.get("duplicate_row_ratio", 0)
         if dup_ratio > 0.05:
             if ko:
-                recommendations.append("데이터 파이프라인에 중복 행 탐지 절차를 추가하는 것을 검토하세요")
+                recommendations.append("데이터 처리 절차에 중복 행 탐지 및 처리 기준을 반영하십시오")
             else:
                 recommendations.append(
                     "Consider implementing duplicate row detection in your data pipeline"
@@ -295,7 +326,7 @@ class ProfileDataConverter:
         if high_null_cols:
             columns = ", ".join(high_null_cols[:3])
             if ko:
-                recommendations.append(f"결측값 비율이 높은 컬럼의 수집 절차를 점검하세요: {columns}")
+                recommendations.append(f"결측값 비율이 높은 컬럼의 수집 기준과 결측 대체 기준을 점검하십시오: {columns}")
             else:
                 recommendations.append(
                     f"Review data collection for columns with high missing values: {columns}"
@@ -350,6 +381,12 @@ class HTMLReportBuilder:
         # Use SVG for PDF, ApexCharts for HTML
         chart_lib = ChartLibrary.SVG if _use_svg else ChartLibrary.APEXCHARTS
         self._chart_renderer = get_chart_renderer(chart_lib)
+        self._report_document = ResearchReportDocument(
+            self._label,
+            language=self.config.language,
+            theme_name=self._theme_config.name,
+        )
+        self._report_renderer = ReportDocumentRenderer(self._report_document)
         if self.config.language.startswith("ko") and self.config.footer_text == "Generated by Truthound":
             self.config.footer_text = self._label(
                 "report.generated_by_framework",
@@ -359,6 +396,18 @@ class HTMLReportBuilder:
     def _label(self, key: str, default: str, **params: Any) -> str:
         catalog = get_catalog(self.config.language)
         return catalog.get(key, default, **params)
+
+    def _chapter_title(self, number: int, key: str, default: str) -> str:
+        return self._report_document.captions.chapter(number, key, default)
+
+    def _appendix_title(self, letter: str, key: str, default: str) -> str:
+        return self._report_document.captions.appendix(letter, key, default)
+
+    def _table_caption(self, number: int, title: str) -> str:
+        return self._report_document.captions.table(number, title)
+
+    def _figure_caption(self, number: int, title: str) -> str:
+        return self._report_document.captions.figure(number, title)
 
     def _labels(self) -> dict[str, str]:
         return {
@@ -516,7 +565,12 @@ class HTMLReportBuilder:
                 subtitle=self._label("section.overview.subtitle", "Dataset summary and key metrics"),
                 metrics=converter.get_overview_metrics(),
                 charts=[
-                    converter.get_type_distribution(self._label("chart.data_types", "Data Types Distribution")),
+                    converter.get_type_distribution(
+                        self._figure_caption(
+                            1,
+                            self._label("chart.data_types", "Data Types Distribution"),
+                        )
+                    ),
                 ],
                 metadata={"labels": self._labels()},
             )
@@ -540,9 +594,14 @@ class HTMLReportBuilder:
                     "uniqueness": min(uniqueness, 100),
                 },
                 charts=[
-                    converter.get_null_distribution(self._label("chart.missing_values", "Top Columns by Missing Values")),
+                    converter.get_null_distribution(
+                        self._figure_caption(
+                            2,
+                            self._label("chart.missing_values", "Top Columns by Missing Values"),
+                        )
+                    ),
                 ],
-                alerts=converter.get_alerts(),
+                alerts=converter.get_alerts(language=self.config.language),
                 metadata={"labels": self._labels()},
             )
 
@@ -551,7 +610,7 @@ class HTMLReportBuilder:
 
             # Build summary table
             table = {
-                "title": self._label("table.column_summary", "Column Summary"),
+                "title": self._table_caption(1, self._label("table.column_summary", "Column Summary")),
                 "headers": [
                     self._label("table.column", "Column"),
                     self._label("table.type", "Type"),
@@ -595,7 +654,12 @@ class HTMLReportBuilder:
                 title=self._label("section.distribution", "Value Distribution"),
                 subtitle=self._label("section.distribution.subtitle", "Distribution analysis across columns"),
                 charts=[
-                    converter.get_uniqueness_distribution(self._label("chart.uniqueness", "Top Columns by Uniqueness")),
+                    converter.get_uniqueness_distribution(
+                        self._figure_caption(
+                            3,
+                            self._label("chart.uniqueness", "Top Columns by Uniqueness"),
+                        )
+                    ),
                 ],
                 metadata={"labels": self._labels()},
             )
@@ -622,7 +686,7 @@ class HTMLReportBuilder:
             )
 
         elif section_type == SectionType.ALERTS:
-            alerts = converter.get_alerts()
+            alerts = converter.get_alerts(language=self.config.language)
             return SectionSpec(
                 section_type=section_type,
                 title=self._label("section.alerts", "Alerts"),
@@ -633,6 +697,15 @@ class HTMLReportBuilder:
             )
 
         return None
+
+    def _render_executive_summary(self, spec: ReportSpec) -> str:
+        return self._report_renderer.render_executive_summary(spec)
+
+    def _render_quality_framework(self, spec: ReportSpec) -> str:
+        return self._report_renderer.render_quality_framework()
+
+    def _render_appendices(self, spec: ReportSpec) -> str:
+        return self._report_renderer.render_appendices(spec)
 
     def _render_html(self, spec: ReportSpec, for_pdf: bool = False) -> str:
         """Render the complete HTML document.
@@ -651,60 +724,30 @@ class HTMLReportBuilder:
             include_apexcharts=not self._use_svg,
         )
 
-        # Render sections
-        sections_html = []
-        for idx, section_spec in enumerate(spec.sections, 1):
+        # Render sections, then group them into report chapters.
+        rendered_sections: dict[SectionType, str] = {}
+        for section_spec in spec.sections:
             renderer = get_section_renderer(section_spec.section_type)
             section_html = renderer.render(
                 section_spec,
                 self._chart_renderer,
                 self._theme_config,
             )
-            # Add section numbering for PDF
-            if for_pdf:
-                section_html = section_html.replace(
-                    f'<h2 class="section-title">{section_spec.title}</h2>',
-                    f'<h2 class="section-title">{idx}. {section_spec.title}</h2>'
-                )
-            sections_html.append(section_html)
+            rendered_sections[section_spec.section_type] = section_html
+
+        document_chapter_groups = self._report_document.chapter_groups(spec)
+        chapters_html = self._report_renderer.render_chapters(
+            document_chapter_groups,
+            rendered_sections,
+        )
+        executive_summary_html = self._render_executive_summary(spec)
+        quality_framework_html = self._render_quality_framework(spec)
+        appendices_html = self._render_appendices(spec)
 
         # Build TOC - professional style for PDF
         toc_html = ""
         if spec.config.include_toc:
-            if for_pdf:
-                # Professional document-style TOC for PDF
-                toc_items = []
-                for idx, section_spec in enumerate(spec.sections, 1):
-                    section_id = f"section-{section_spec.section_type.value}"
-                    toc_items.append(
-                        f'''<tr class="toc-row">
-                            <td class="toc-number">{idx}.</td>
-                            <td class="toc-entry"><a href="#{section_id}">{section_spec.title}</a></td>
-                            <td class="toc-dots"></td>
-                        </tr>'''
-                    )
-                toc_html = f'''
-                    <section class="report-toc-professional">
-                        <h2 class="toc-title-professional">{self._label("report.toc", "Table of Contents")}</h2>
-                        <table class="toc-table">
-                            <tbody>{"".join(toc_items)}</tbody>
-                        </table>
-                    </section>
-                '''
-            else:
-                # Standard TOC for HTML
-                toc_items = []
-                for section_spec in spec.sections:
-                    section_id = f"section-{section_spec.section_type.value}"
-                    toc_items.append(
-                        f'<li class="toc-item"><a href="#{section_id}">{section_spec.title}</a></li>'
-                    )
-                toc_html = f'''
-                    <nav class="report-toc">
-                        <h3 class="toc-title">{self._label("report.contents", "Contents")}</h3>
-                        <ul class="toc-list">{"".join(toc_items)}</ul>
-                    </nav>
-                '''
+            toc_html = self._report_renderer.render_toc(document_chapter_groups, for_pdf=for_pdf)
 
         # Build title/cover page for PDF
         title_page_html = ""
@@ -829,7 +872,10 @@ class HTMLReportBuilder:
         {header_html}
         {toc_html}
         <main class="report-main">
-            {"".join(sections_html)}
+            {executive_summary_html}
+            {chapters_html}
+            {quality_framework_html}
+            {appendices_html}
         </main>
         {footer_html}
     </div>
@@ -956,46 +1002,65 @@ class HTMLReportBuilder:
     border-bottom: 1.5pt solid var(--color-primary);
 }
 
-.toc-table {
-    width: 100%;
-    border-collapse: collapse;
+.toc-list-professional {
+    list-style: none;
+    margin: 0;
+    padding: 0;
 }
 
-.toc-row {
-    border-bottom: 0.5pt dotted var(--color-border);
+.toc-row-professional {
+    margin: 0;
+    padding: 0;
 }
 
-.toc-row:last-child {
-    border-bottom: none;
-}
-
-.toc-number {
-    width: 10mm;
+.toc-link-professional {
+    display: flex;
+    align-items: baseline;
+    gap: 2mm;
+    min-width: 0;
     padding: 3mm 0;
-    font-weight: 600;
-    color: var(--color-primary);
-    vertical-align: top;
-}
-
-.toc-entry {
-    padding: 3mm 0;
-    vertical-align: top;
-}
-
-.toc-entry a {
     color: var(--color-text-primary);
     text-decoration: none;
     font-weight: 500;
+    line-height: 1.45;
 }
 
-.toc-entry a:hover {
+.toc-number {
+    flex: 0 0 8mm;
+    font-weight: 600;
     color: var(--color-primary);
+    white-space: nowrap;
 }
 
-.toc-dots {
-    width: 100%;
+.toc-entry {
+    flex: 0 1 auto;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: keep-all;
+}
+
+.toc-leader {
+    flex: 1 1 20mm;
+    min-width: 14mm;
+    height: 0;
     border-bottom: 0.5pt dotted var(--color-border);
-    vertical-align: bottom;
+    transform: translateY(-1mm);
+}
+
+.toc-page {
+    flex: 0 0 9mm;
+    text-align: right;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+}
+
+.toc-page::after {
+    content: target-counter(attr(data-target), page);
+}
+
+.toc-link-professional:hover .toc-entry {
+    color: var(--color-primary);
 }
 
 /* Professional Footer */
@@ -1055,6 +1120,34 @@ body.pdf-document .section-subtitle {
     margin-top: 0.5rem;
 }
 
+body.pdf-document .executive-summary {
+    page-break-after: always;
+}
+
+body.pdf-document .executive-summary-grid {
+    grid-template-columns: 1fr 1fr;
+}
+
+body.pdf-document .report-chapter {
+    page-break-before: always;
+}
+
+body.pdf-document .chapter-title {
+    font-size: 15pt;
+}
+
+body.pdf-document .quality-framework {
+    page-break-before: always;
+}
+
+body.pdf-document .report-appendix {
+    page-break-before: always;
+}
+
+body.pdf-document .appendix-title {
+    font-size: 13pt;
+}
+
 body.pdf-document .report-section {
     page-break-inside: avoid;
     margin-bottom: 2rem;
@@ -1067,6 +1160,18 @@ body.pdf-document .chart-container {
 
 body.pdf-document .data-table {
     font-size: var(--font-size-sm);
+}
+
+body.pdf-document .data-table thead {
+    display: table-header-group;
+}
+
+body.pdf-document .data-table tr,
+body.pdf-document .table-container,
+body.pdf-document .auditability-block,
+body.pdf-document .executive-summary-item {
+    page-break-inside: avoid;
+    break-inside: avoid;
 }
 
 body.pdf-document .data-table th {

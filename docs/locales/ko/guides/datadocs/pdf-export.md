@@ -212,6 +212,19 @@ TRUTHOUND_DATADOCS_REQUIRE_PDF_RENDER=1 pytest tests/datadocs/test_report_visual
 
 이 flag들은 PDF 의존성 부재를 skip이 아니라 실패로 처리하므로, CI에서 PDF coverage가 조용히 사라지는 일을 막습니다.
 
+WeasyPrint를 사용할 수 있는 환경에서는 PDF smoke가 공개 보고서 테마인
+`light`, `dark`, `minimal`을 모두 실제 PDF로 export합니다. 이를 통해 테마별
+PDF 렌더링 회귀를 막으면서도, 가벼운 기본 개발 환경에서는 시스템 PDF 의존성
+없이 HTML 및 PDF-ready structural smoke를 계속 실행할 수 있습니다.
+
+PDF coverage를 주장하는 release 또는 benchmark gate는 smoke test를 non-skip
+mode로 실행해야 합니다. macOS runner에서 Homebrew로 Pango, Cairo, GLib을
+설치했지만 WeasyPrint가 `libgobject` 등 동적 라이브러리를 찾지 못하면
+`DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib`를 지정합니다. 이 smoke test는
+생성된 PDF에서 텍스트도 추출하므로, A4 보고서 목차, 장별 참조, 진단 기준 부록,
+한국어 localization marker가 source HTML뿐 아니라 PDF artifact에도 남아 있는지
+확인할 수 있습니다.
+
 ## Print CSS
 
 실무 운영 가이드에서 PDF, CSS을(를) 기준으로 데이터 품질 검증, 워크플로우 자동화, 결과 해석 방법을 설명합니다.

@@ -354,7 +354,17 @@ body {
     color: var(--color-secondary);
 }
 
-.report-section,
+.report-section {
+    margin-bottom: 9mm;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    break-inside: auto;
+    page-break-inside: auto;
+}
+
 .panel {
     margin-bottom: 9mm;
     padding: 0;
@@ -380,6 +390,93 @@ body {
 .report-section p {
     color: var(--color-text-primary);
     margin-bottom: 3mm;
+}
+
+.executive-summary,
+.quality-framework,
+.report-appendix {
+    margin-bottom: 9mm;
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+.report-chapter {
+    margin-bottom: 9mm;
+    break-inside: auto;
+    page-break-inside: auto;
+}
+
+.executive-summary {
+    padding: 6mm;
+    background-color: rgba(31, 78, 121, 0.045);
+    border: 0.8pt solid var(--color-border);
+    border-left: 3pt solid var(--color-primary);
+}
+
+.executive-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 3mm;
+}
+
+.executive-summary-item {
+    padding: 3mm;
+    background-color: var(--color-surface);
+    border: 0.5pt solid var(--color-border);
+}
+
+.executive-summary-item h3 {
+    margin: 0 0 1.5mm;
+    color: var(--color-primary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+}
+
+.executive-summary-item p,
+.report-paragraph {
+    margin: 0;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    line-height: 1.55;
+}
+
+.chapter-lead,
+.appendix-lead {
+    margin: 0 0 4mm;
+    padding-left: 3mm;
+    border-left: 2pt solid var(--color-primary);
+    color: var(--color-text-secondary);
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+}
+
+.chapter-header {
+    margin: 10mm 0 5mm;
+    padding-bottom: 2.5mm;
+    border-bottom: 1.5pt solid var(--color-primary);
+}
+
+.chapter-title,
+.appendix-title {
+    margin: 0;
+    color: var(--color-primary);
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    line-height: 1.35;
+}
+
+.appendix-title {
+    font-size: var(--font-size-xl);
+    border-bottom: 1pt solid var(--color-primary);
+    padding-bottom: 2mm;
+    margin-bottom: 4mm;
+}
+
+.auditability-block {
+    padding: 4mm;
+    background-color: var(--color-surface);
+    border: 0.6pt solid var(--color-border);
+    break-inside: avoid;
 }
 
 .data-list {
@@ -440,6 +537,14 @@ table td,
     vertical-align: middle;
 }
 
+table.report-object-table th,
+table.report-object-table td,
+.data-table.report-object-table th,
+.data-table.report-object-table td {
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+}
+
 table th,
 .data-table th {
     background-color: var(--color-primary);
@@ -451,6 +556,51 @@ table th,
 table td:nth-child(n+3),
 .data-table td:nth-child(n+3) {
     text-align: right;
+}
+
+.quality-coverage-table {
+    table-layout: fixed;
+}
+
+.quality-coverage-table th:nth-child(1),
+.quality-coverage-table td:nth-child(1) {
+    width: 22%;
+}
+
+.quality-coverage-table th:nth-child(2),
+.quality-coverage-table td:nth-child(2) {
+    width: 18%;
+    text-align: center;
+}
+
+.quality-coverage-table th:nth-child(3),
+.quality-coverage-table td:nth-child(3) {
+    width: 60%;
+    text-align: left;
+    line-height: 1.55;
+}
+
+.methodology-table {
+    table-layout: fixed;
+}
+
+.methodology-table th:nth-child(1),
+.methodology-table td:nth-child(1) {
+    width: 26%;
+}
+
+.methodology-table th:nth-child(2),
+.methodology-table td:nth-child(2) {
+    width: 22%;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.methodology-table th:nth-child(3),
+.methodology-table td:nth-child(3) {
+    width: 52%;
+    text-align: left;
+    line-height: 1.55;
 }
 
 table tbody tr:nth-child(even),
