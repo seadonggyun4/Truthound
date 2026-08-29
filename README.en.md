@@ -170,7 +170,9 @@ drift = compare({"score": [0.1, 0.2]}, {"score": [0.1, 0.8]})
 Data Docs produces A4-style HTML/PDF reports. The public themes are `light`,
 `dark`, and `minimal`, and reports include numbered tables, figures,
 appendices, quality-dimension mapping, and a methodology appendix for diagnostic
-criteria and thresholds.
+criteria and thresholds. Advanced integrations can inspect the report
+architecture with `ReportDocument` while keeping `generate_html_report`,
+`HTMLReportBuilder`, and `export_to_pdf` compatible.
 
 ### CLI
 

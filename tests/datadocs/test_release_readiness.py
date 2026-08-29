@@ -7,9 +7,9 @@ import tomllib
 import warnings
 from pathlib import Path
 
-from truthound.datadocs import HTMLReportBuilder, ReportTheme, get_available_themes
+from truthound.datadocs import HTMLReportBuilder, ReportDocument, ReportTheme, get_available_themes
 from truthound.datadocs.builder import generate_html_report
-from truthound.datadocs.report_document import ResearchReportDocument
+from truthound.datadocs.report_document import InterpretationRule, ResearchReportDocument
 from truthound.datadocs.report_renderers import ReportDocumentRenderer
 from truthound.datadocs.themes.default import get_theme, list_themes
 
@@ -23,7 +23,10 @@ def test_report_engine_modules_are_importable_from_datadocs_package() -> None:
     document_module = importlib.import_module("truthound.datadocs.report_document")
     renderer_module = importlib.import_module("truthound.datadocs.report_renderers")
 
+    assert ReportDocument is ResearchReportDocument
     assert document_module.ResearchReportDocument is ResearchReportDocument
+    assert document_module.ReportDocument is ReportDocument
+    assert document_module.InterpretationRule is InterpretationRule
     assert renderer_module.ReportDocumentRenderer is ReportDocumentRenderer
 
 
@@ -113,7 +116,11 @@ def test_release_docs_surface_mentions_report_policy_without_private_engine_path
     assert "`dark`" in docs["README.md"]
     assert "`minimal`" in docs["README.md"]
     assert "methodology appendix" in docs["docs/guides/datadocs/html-reports.md"]
+    assert "ReportDocument" in docs["docs/guides/datadocs/html-reports.md"]
+    assert "interpretation-rule" in docs["docs/guides/datadocs/html-reports.md"]
     assert "진단 기준 및 임계값 부록" in docs["docs/locales/ko/guides/datadocs/html-reports.md"]
+    assert "ReportDocument" in docs["docs/locales/ko/guides/datadocs/html-reports.md"]
+    assert "해석 rule" in docs["docs/locales/ko/guides/datadocs/html-reports.md"]
     assert "The PDF smoke also exports each public report theme" in docs[
         "docs/guides/datadocs/pdf-export.md"
     ]

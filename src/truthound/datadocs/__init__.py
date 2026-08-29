@@ -128,6 +128,20 @@ from truthound.datadocs.styles import (
     get_complete_stylesheet,
 )
 
+from truthound.datadocs.report_document import (
+    AlertThresholds,
+    CaptionRegistry,
+    InterpretationRule,
+    QualityDimensionDefinition,
+    ReportAppendix,
+    ReportChapter,
+    ReportDocument,
+    ReportObject,
+    ReportObjectRegistry,
+    ReportSection,
+    ResearchReportDocument,
+)
+
 from truthound.datadocs.builder import (
     ProfileDataConverter,
     HTMLReportBuilder,
@@ -202,6 +216,17 @@ __all__ = [
     "ThemeTypography",
     "ThemeSpacing",
     "ThemeConfig",
+    "AlertThresholds",
+    "CaptionRegistry",
+    "InterpretationRule",
+    "QualityDimensionDefinition",
+    "ReportAppendix",
+    "ReportChapter",
+    "ReportDocument",
+    "ReportObject",
+    "ReportObjectRegistry",
+    "ReportSection",
+    "ResearchReportDocument",
     "ReportMetadata",
     "ChartSpec",
     "SectionSpec",

@@ -103,6 +103,13 @@ Alert thresholds are maintained from the same report policy source used by the
 alert generator. That keeps the visible methodology appendix aligned with the
 actual warning behavior in generated reports.
 
+For advanced integrations, `ReportDocument` exposes the report architecture
+adapter used by the HTML/PDF builders. It provides stable chapter, appendix,
+quality-dimension, interpretation-rule, and report-object registry metadata
+without changing `generate_html_report`, `HTMLReportBuilder`, or `export_to_pdf`.
+Use this layer when an application needs to inspect report structure before
+rendering, while keeping profile and validation calculations unchanged.
+
 Generated appendices use reproducibility metadata such as package version,
 Python version, platform, selected theme, language, source label, and a metadata
 fingerprint. They do not embed raw input data in the fingerprint.

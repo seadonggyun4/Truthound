@@ -23,6 +23,7 @@ Labeler = Callable[..., str]
 class AlertThresholds:
     """Shared thresholds for report alerts and methodology notes."""
 
+    missing_review_threshold: float = 0.05
     high_missing_warning_threshold: float = 0.5
     high_missing_error_threshold: float = 0.8
     low_uniqueness_threshold: float = 0.01
@@ -40,6 +41,36 @@ class MethodologyThresholdRow:
     criterion: str
     threshold: str
     interpretation: str
+
+
+@dataclass(frozen=True)
+class ReportSection:
+    """Stable report-section metadata independent from rendered HTML."""
+
+    identifier: str
+    title: str
+    section_type: SectionType | None = None
+    lead: str = ""
+
+
+@dataclass(frozen=True)
+class ReportChapter:
+    """Stable report chapter model used by adapters and renderers."""
+
+    number: int
+    title: str
+    sections: tuple[ReportSection, ...]
+    lead: str = ""
+
+
+@dataclass(frozen=True)
+class ReportAppendix:
+    """Stable report appendix model for audit-oriented appendices."""
+
+    letter: str
+    title: str
+    anchor: str
+    purpose: str
 
 
 @dataclass(frozen=True)
@@ -159,6 +190,24 @@ class SummaryItem:
 
 
 @dataclass(frozen=True)
+class InterpretationRule:
+    """A deterministic report interpretation rule.
+
+    Rules produce user-facing narrative from profile metadata only. They do not
+    alter profile metrics or validation outcomes.
+    """
+
+    rule_id: str
+    priority: int
+    trigger: Callable[[ReportSpec, AlertThresholds], bool]
+    risk_key: str
+    risk_default: str
+    action_key: str
+    action_default: str
+    params: Callable[[ReportSpec, AlertThresholds], dict[str, Any]]
+
+
+@dataclass(frozen=True)
 class ReportObject:
     """Registered report object that may be captioned or referenced."""
 
@@ -209,6 +258,10 @@ class ReportObjectRegistry:
 
     def objects(self) -> tuple[ReportObject, ...]:
         return tuple(self._objects.values())
+
+    def by_type(self, object_type: str) -> tuple[ReportObject, ...]:
+        """Return registered objects of one type in registration order."""
+        return tuple(obj for obj in self._objects.values() if obj.object_type == object_type)
 
 
 class CaptionRegistry:
@@ -422,6 +475,47 @@ class ResearchReportDocument:
             ),
         ]
 
+    def report_chapters(self, spec: ReportSpec) -> list[ReportChapter]:
+        """Return stable chapter metadata for external inspection and tests."""
+        chapters: list[ReportChapter] = []
+        for group in self.chapter_groups(spec):
+            sections = tuple(
+                ReportSection(
+                    identifier=section.section_type.value,
+                    title=section.title,
+                    section_type=section.section_type,
+                )
+                for section in group.sections
+            )
+            chapters.append(
+                ReportChapter(
+                    number=group.number,
+                    title=group.title,
+                    sections=sections,
+                    lead=group.lead,
+                )
+            )
+        return chapters
+
+    def report_appendices(self) -> list[ReportAppendix]:
+        """Return stable appendix metadata in rendered order."""
+        appendix_specs = [
+            ("A", "appendix.metrics", "Metric Definitions and Formulae", "appendix.metrics.lead"),
+            ("B", "appendix.reproducibility", "Execution Environment and Reproducibility", "appendix.reproducibility.lead"),
+            ("C", "appendix.full_profile", "Full Column Profile", "appendix.full_profile.lead"),
+            ("D", "appendix.quality_coverage", "Quality Dimension Coverage and Limitations", "appendix.quality_coverage.lead"),
+            ("E", "appendix.methodology", "Diagnostic Criteria and Thresholds", "appendix.methodology.lead"),
+        ]
+        return [
+            ReportAppendix(
+                letter=letter,
+                title=self.captions.appendix(letter, title_key, default),
+                anchor=f"appendix-{letter.lower()}",
+                purpose=self._label(lead_key, default),
+            )
+            for letter, title_key, default, lead_key in appendix_specs
+        ]
+
     def summary_items(self, spec: ReportSpec) -> list[SummaryItem]:
         """Create the executive summary using profile metadata only."""
         metrics = self._overview_metrics(spec.profile_data)
@@ -432,30 +526,10 @@ class ResearchReportDocument:
             len(spec.profile_data.get("columns", [])),
         )
         duplicate_ratio = spec.profile_data.get("duplicate_row_ratio", 0)
-        high_missing, _low_uniqueness = self.risk_columns(spec)
-        primary_risk = (
-            self._label(
-                "summary.risk.missing",
-                "{count} columns require missing-value review.",
-                count=len(high_missing),
-            )
-            if high_missing
-            else self._label(
-                "summary.risk.none",
-                "No high-priority structural risk was detected from the available profile.",
-            )
-        )
-        priority_action = (
-            self._label(
-                "summary.action.missing",
-                "Review collection and imputation rules for high-missing columns.",
-            )
-            if high_missing
-            else self._label(
-                "summary.action.validators",
-                "Maintain suggested validation rules for monitored columns.",
-            )
-        )
+        rule = self.primary_interpretation_rule(spec)
+        rule_params = rule.params(spec, ALERT_THRESHOLDS)
+        primary_risk = self._label(rule.risk_key, rule.risk_default, **rule_params)
+        priority_action = self._label(rule.action_key, rule.action_default, **rule_params)
 
         return [
             SummaryItem(
@@ -507,6 +581,21 @@ class ResearchReportDocument:
             for definition in QUALITY_DIMENSION_DEFINITIONS
         ]
 
+    def quality_dimension_definitions(self) -> tuple[QualityDimensionDefinition, ...]:
+        """Return the stable report quality dimension registry."""
+        return QUALITY_DIMENSION_DEFINITIONS
+
+    def interpretation_rules(self) -> tuple[InterpretationRule, ...]:
+        """Return deterministic summary interpretation rules in priority order."""
+        return INTERPRETATION_RULES
+
+    def primary_interpretation_rule(self, spec: ReportSpec) -> InterpretationRule:
+        """Return the first matching summary rule, falling back to monitoring guidance."""
+        for rule in self.interpretation_rules():
+            if rule.trigger(spec, ALERT_THRESHOLDS):
+                return rule
+        return DEFAULT_INTERPRETATION_RULE
+
     def quality_coverage_rows(self) -> list[tuple[str, str, str]]:
         """Return quality-dimension coverage rows for the audit appendix."""
         return [
@@ -522,6 +611,14 @@ class ResearchReportDocument:
         """Return threshold notes from the same source used by alert generation."""
         thresholds = ALERT_THRESHOLDS
         return [
+            MethodologyThresholdRow(
+                self._label("methodology.missing_review", "Missing-value review"),
+                f">= {thresholds.missing_review_threshold:.0%}",
+                self._label(
+                    "methodology.missing_review.note",
+                    "Columns at or above this threshold can drive executive-summary review guidance without changing the underlying profile calculation.",
+                ),
+            ),
             MethodologyThresholdRow(
                 self._label("methodology.high_missing", "High missing values"),
                 f"> {thresholds.high_missing_warning_threshold:.0%}; >= {thresholds.high_missing_error_threshold:.0%}",
@@ -572,7 +669,9 @@ class ResearchReportDocument:
     def risk_columns(self, spec: ReportSpec) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         """Identify simple profile-driven risk groups for report narrative."""
         columns = spec.profile_data.get("columns", [])
-        high_missing = [c for c in columns if c.get("null_ratio", 0) >= 0.05]
+        high_missing = [
+            c for c in columns if c.get("null_ratio", 0) >= ALERT_THRESHOLDS.missing_review_threshold
+        ]
         low_uniqueness = [
             c
             for c in columns
@@ -645,3 +744,111 @@ class ResearchReportDocument:
             1,
         )
         return metrics
+
+
+def _high_missing_columns(spec: ReportSpec, thresholds: AlertThresholds) -> list[dict[str, Any]]:
+    return [
+        column
+        for column in spec.profile_data.get("columns", [])
+        if column.get("null_ratio", 0) >= thresholds.missing_review_threshold
+    ]
+
+
+def _low_uniqueness_columns(spec: ReportSpec, thresholds: AlertThresholds) -> list[dict[str, Any]]:
+    return [
+        column
+        for column in spec.profile_data.get("columns", [])
+        if column.get("unique_ratio", 1) <= thresholds.low_uniqueness_threshold
+        and spec.profile_data.get("row_count", 0) > thresholds.low_uniqueness_min_rows
+    ]
+
+
+def _has_duplicate_risk(spec: ReportSpec, thresholds: AlertThresholds) -> bool:
+    return spec.profile_data.get("duplicate_row_ratio", 0) > thresholds.duplicate_warning_threshold
+
+
+def _missing_rule_params(spec: ReportSpec, thresholds: AlertThresholds) -> dict[str, Any]:
+    return {"count": len(_high_missing_columns(spec, thresholds))}
+
+
+def _duplicate_rule_params(spec: ReportSpec, _thresholds: AlertThresholds) -> dict[str, Any]:
+    return {"duplicate_ratio": spec.profile_data.get("duplicate_row_ratio", 0)}
+
+
+def _low_uniqueness_rule_params(spec: ReportSpec, thresholds: AlertThresholds) -> dict[str, Any]:
+    return {"count": len(_low_uniqueness_columns(spec, thresholds))}
+
+
+def _default_rule_params(_spec: ReportSpec, _thresholds: AlertThresholds) -> dict[str, Any]:
+    return {}
+
+
+INTERPRETATION_RULES: tuple[InterpretationRule, ...] = (
+    InterpretationRule(
+        "high-missing-values",
+        10,
+        lambda spec, thresholds: bool(_high_missing_columns(spec, thresholds)),
+        "summary.risk.missing",
+        "{count} columns require missing-value review.",
+        "summary.action.missing",
+        "Review collection and imputation rules for high-missing columns.",
+        _missing_rule_params,
+    ),
+    InterpretationRule(
+        "duplicate-rows",
+        20,
+        _has_duplicate_risk,
+        "summary.risk.duplicates",
+        "Duplicate rows account for {duplicate_ratio:.2%}, which requires source loading and deduplication review.",
+        "summary.action.duplicates",
+        "Review upstream keys, ingestion retries, and deduplication rules before downstream use.",
+        _duplicate_rule_params,
+    ),
+    InterpretationRule(
+        "low-uniqueness",
+        30,
+        lambda spec, thresholds: bool(_low_uniqueness_columns(spec, thresholds)),
+        "summary.risk.low_uniqueness",
+        "{count} columns show low uniqueness and may require code-list or constant-field review.",
+        "summary.action.low_uniqueness",
+        "Confirm whether low-uniqueness columns are intentional categories, constants, or collection defects.",
+        _low_uniqueness_rule_params,
+    ),
+)
+
+DEFAULT_INTERPRETATION_RULE = InterpretationRule(
+    "profile-monitoring",
+    100,
+    lambda _spec, _thresholds: True,
+    "summary.risk.none",
+    "No high-priority structural risk was detected from the available profile.",
+    "summary.action.validators",
+    "Maintain suggested validation rules for monitored columns.",
+    _default_rule_params,
+)
+
+
+ReportDocument = ResearchReportDocument
+
+
+__all__ = [
+    "ALERT_THRESHOLDS",
+    "DEFAULT_INTERPRETATION_RULE",
+    "INTERPRETATION_RULES",
+    "AlertThresholds",
+    "CaptionRegistry",
+    "ChapterGroup",
+    "InterpretationRule",
+    "MethodologyThresholdRow",
+    "QualityDimensionDefinition",
+    "QualityDimensionRow",
+    "ReportAppendix",
+    "ReportChapter",
+    "ReportDocument",
+    "ReportObject",
+    "ReportObjectRegistry",
+    "ReportSection",
+    "ResearchReportDocument",
+    "SummaryItem",
+    "TocEntry",
+]

@@ -9,12 +9,14 @@ from pathlib import Path
 
 import pytest
 
-from truthound.datadocs import HTMLReportBuilder, ReportTheme, export_to_pdf
+from truthound.datadocs import HTMLReportBuilder, ReportDocument, ReportTheme, export_to_pdf
 from truthound.datadocs.base import ReportConfig, ReportMetadata, ReportSpec, SectionSpec, SectionType
 from truthound.datadocs.builder import generate_html_report
 from truthound.datadocs.i18n import get_supported_locales
 from truthound.datadocs.report_document import (
     ALERT_THRESHOLDS,
+    DEFAULT_INTERPRETATION_RULE,
+    INTERPRETATION_RULES,
     QUALITY_DIMENSION_DEFINITIONS,
     CaptionRegistry,
     ReportObjectRegistry,
@@ -122,8 +124,8 @@ def _label(key: str, default: str, **params) -> str:
     return default
 
 
-def _report_spec_for_document_model() -> ReportSpec:
-    profile = sample_a4_report_profile()
+def _report_spec_for_document_model(profile: dict | None = None) -> ReportSpec:
+    profile = profile or sample_a4_report_profile()
     return ReportSpec(
         metadata=ReportMetadata(title="Truthound A4 Visual Smoke", data_source=profile["source"]),
         config=ReportConfig(theme=ReportTheme.LIGHT, language="en"),
@@ -375,6 +377,24 @@ def test_report_object_registry_rejects_missing_and_conflicting_references() -> 
         registry.register("table", 1, "Different", "Table 1. Different", "table-1")
 
 
+def test_report_object_registry_can_list_objects_by_type_in_registration_order() -> None:
+    registry = ReportObjectRegistry()
+    registry.register("table", 1, "Column Summary", "Table 1. Column Summary", "table-1")
+    registry.register("figure", 1, "Data Types", "Figure 1. Data Types", "figure-1")
+    registry.register("table", 2, "Quality Mapping", "Table 2. Quality Mapping", "table-2")
+
+    assert [obj.identifier for obj in registry.by_type("table")] == ["1", "2"]
+    assert [obj.label for obj in registry.by_type("figure")] == ["Figure 1. Data Types"]
+
+
+def test_report_document_public_adapter_keeps_research_document_compatibility() -> None:
+    document = ReportDocument(_label, language="en", theme_name="light")
+
+    assert isinstance(document, ResearchReportDocument)
+    assert [chapter.number for chapter in document.report_chapters(_report_spec_for_document_model())] == [1, 2, 3, 4, 5]
+    assert [appendix.letter for appendix in document.report_appendices()] == ["A", "B", "C", "D", "E"]
+
+
 def test_quality_framework_model_separates_measured_and_input_required_dimensions() -> None:
     document = ResearchReportDocument(_label, language="en", theme_name="light")
 
@@ -394,6 +414,7 @@ def test_quality_framework_model_separates_measured_and_input_required_dimension
         "Input required",
         "Input required",
     ]
+    assert document.quality_dimension_definitions() == QUALITY_DIMENSION_DEFINITIONS
 
 
 def test_quality_coverage_appendix_d_keeps_unmeasured_dimensions_explicit() -> None:
@@ -407,6 +428,40 @@ def test_quality_coverage_appendix_d_keeps_unmeasured_dimensions_explicit() -> N
     assert coverage[-1][0] == "Timeliness"
     assert coverage[-1][1] == "Input required"
     assert "freshness metadata" in coverage[-1][2]
+
+
+def test_interpretation_rules_are_priority_ordered_and_profile_metadata_only() -> None:
+    document = ResearchReportDocument(_label, language="en", theme_name="light")
+    spec = _report_spec_for_document_model()
+
+    rules = document.interpretation_rules()
+    selected = document.primary_interpretation_rule(spec)
+
+    assert rules == INTERPRETATION_RULES
+    assert [rule.priority for rule in rules] == sorted(rule.priority for rule in rules)
+    assert selected.rule_id == "high-missing-values"
+    assert selected.params(spec, ALERT_THRESHOLDS) == {"count": 1}
+
+
+def test_interpretation_rules_fall_back_to_monitoring_when_no_risk_matches() -> None:
+    profile = sample_a4_report_profile()
+    clean_columns = []
+    for column in profile["columns"]:
+        clean_column = dict(column)
+        clean_column["null_ratio"] = 0
+        clean_column["unique_ratio"] = 0.5
+        clean_column["is_constant"] = False
+        clean_columns.append(clean_column)
+    profile = {
+        **profile,
+        "row_count": 500,
+        "columns": clean_columns,
+        "duplicate_row_ratio": 0,
+    }
+    spec = _report_spec_for_document_model(profile)
+    document = ResearchReportDocument(_label, language="en", theme_name="light")
+
+    assert document.primary_interpretation_rule(spec) == DEFAULT_INTERPRETATION_RULE
 
 
 def test_report_object_numbering_has_no_collisions_in_korean_pdf_ready_html() -> None:

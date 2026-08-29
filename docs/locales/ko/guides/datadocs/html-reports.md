@@ -94,6 +94,13 @@ A4 Data Docs 산출물은 단순 대시보드 덤프가 아니라 공공기관·
 관리됩니다. 따라서 산출물에 표시되는 진단 기준 부록과 실제 경고 발생 동작이
 서로 어긋나지 않습니다.
 
+고급 연동에서는 `ReportDocument`를 통해 HTML/PDF builder가 사용하는 보고서
+구조 adapter를 확인할 수 있습니다. 이 계층은 장, 부록, 품질 차원,
+해석 rule, 보고서 객체 registry metadata를 안정적으로 제공하며
+`generate_html_report`, `HTMLReportBuilder`, `export_to_pdf` 동작과
+프로파일/검증 계산 의미는 변경하지 않습니다. 렌더링 전에 보고서 구조를
+검토해야 하는 애플리케이션에서 이 계층을 사용할 수 있습니다.
+
 생성된 부록은 패키지 버전, Python 버전, 플랫폼, 선택 테마, 언어, 데이터 출처,
 metadata fingerprint 같은 재현성 정보를 사용합니다. fingerprint에는 원본 입력
 데이터 값을 포함하지 않습니다.
