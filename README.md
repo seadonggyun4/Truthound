@@ -21,7 +21,12 @@
   <a href="https://pola.rs/"><img src="https://img.shields.io/badge/Powered%20by-Polars-2563EB?logo=polars&logoColor=white" alt="Powered by Polars"></a>
   <a href="https://github.com/ddotta/awesome-polars"><img src="https://awesome.re/badge.svg" alt="Awesome Polars"></a>
   <a href="https://pepy.tech/project/truthound">
-    <img src="https://api.pepy.tech/personalized-badge/truthound?period=total&units=abbreviation&left_color=grey&right_color=brightgreen&left_text=downloads" alt="Downloads">
+    <img src="https://api.pepy.tech/personalized-badge/truthound?period=total&units=abbreviation&left_color=grey&right_color=brightgreen&left_text=downloads" alt="Total Downloads">
+  </a>
+  <a href="https://pepy.tech/project/truthound">
+    <img
+      src="https://api.pepy.tech/personalized-badge/truthound?period=month&units=abbreviation&left_color=grey&right_color=green&left_text=downloads%2Fmonth"
+      alt="Monthly Downloads">
   </a>
 </p>
 
