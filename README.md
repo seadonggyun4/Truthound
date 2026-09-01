@@ -13,23 +13,14 @@
   <em>Sniffs out bad data.</em>
 </p>
 
-<p align="center">
-  <a href="https://truthound.netlify.app/"><img src="https://img.shields.io/badge/docs-truthound.netlify.app-blue" alt="Documentation"></a>
-  <a href="https://pypi.org/project/truthound/"><img src="https://img.shields.io/pypi/v/truthound.svg" alt="PyPI"></a>
-  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-blue.svg" alt="Python"></a>
-  <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-orange.svg" alt="License"></a>
-  <a href="https://pola.rs/"><img src="https://img.shields.io/badge/Powered%20by-Polars-2563EB?logo=polars&logoColor=white" alt="Powered by Polars"></a>
-  <a href="https://github.com/ddotta/awesome-polars"><img src="https://awesome.re/badge.svg" alt="Awesome Polars"></a>
-  <br/>
-  <a href="https://pepy.tech/project/truthound">
-    <img src="https://api.pepy.tech/personalized-badge/truthound?period=total&units=abbreviation&left_color=grey&right_color=brightgreen&left_text=downloads" alt="Total Downloads">
-  </a>
-  <a href="https://pepy.tech/project/truthound">
-    <img
-      src="https://api.pepy.tech/personalized-badge/truthound?period=month&units=abbreviation&left_color=grey&right_color=green&left_text=downloads%2Fmonth"
-      alt="Monthly Downloads">
-  </a>
-</p>
+[![Documentation](https://img.shields.io/badge/docs-truthound.netlify.app-blue)](https://truthound.netlify.app/)
+[![PyPI](https://img.shields.io/pypi/v/truthound.svg)](https://pypi.org/project/truthound/)
+[![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Powered by Polars](https://img.shields.io/badge/Powered%20by-Polars-2563EB?logo=polars&logoColor=white)](https://pola.rs/)
+[![Awesome Polars](https://awesome.re/badge.svg)](https://github.com/ddotta/awesome-polars)
+[![Total Downloads](https://api.pepy.tech/personalized-badge/truthound?period=total&units=abbreviation&left_color=grey&right_color=brightgreen&left_text=downloads)](https://pepy.tech/project/truthound)
+[![Monthly Downloads](https://api.pepy.tech/personalized-badge/truthound?period=month&units=abbreviation&left_color=grey&right_color=green&left_text=downloads%2Fmonth)](https://pepy.tech/project/truthound)
 
 <!--
 README HEADER FORMAT LOCK:
