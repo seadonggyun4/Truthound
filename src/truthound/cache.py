@@ -79,6 +79,16 @@ def get_data_fingerprint(data: Any) -> str:
     Returns:
         String fingerprint for the data.
     """
+    collect_schema = getattr(data, "collect_schema", None)
+    if callable(collect_schema):
+        try:
+            schema = collect_schema()
+            content = ":".join(
+                f"{name}={dtype}" for name, dtype in schema.items()
+            )
+            return _fast_hash(f"{type(data).__name__}:{content}")
+        except Exception:
+            pass
     if isinstance(data, str):
         path = Path(data)
         if path.exists():
@@ -118,6 +128,16 @@ def get_source_key(data: Any) -> str:
     Returns:
         String key identifying the source.
     """
+    collect_schema = getattr(data, "collect_schema", None)
+    if callable(collect_schema):
+        try:
+            schema = collect_schema()
+            content = ":".join(
+                f"{name}={dtype}" for name, dtype in schema.items()
+            )
+            return f"{type(data).__name__}:{_fast_hash(content)}"
+        except Exception:
+            pass
     if isinstance(data, str):
         path = Path(data)
         if path.exists():
@@ -150,7 +170,7 @@ class SchemaCache:
             try:
                 with open(self.cache_file) as f:
                     self._cache = json.load(f)
-            except (json.JSONDecodeError, IOError):
+            except (json.JSONDecodeError, OSError):
                 self._cache = {}
 
     def _save(self) -> None:

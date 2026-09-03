@@ -1,10 +1,8 @@
 """Tests for auto schema caching system."""
 
-import tempfile
 from pathlib import Path
 
 import polars as pl
-import pytest
 
 from truthound.cache import (
     SchemaCache,
@@ -58,6 +56,14 @@ class TestFingerprinting:
         fp2 = get_data_fingerprint(df)
 
         assert fp1 == fp2
+
+    def test_lazyframe_fingerprint_distinguishes_discovered_schemas(self):
+        """Lazy plans with different schemas must not share an auto-schema cache."""
+        first = pl.DataFrame({"first_id": [1], "first_value": ["a"]}).lazy()
+        second = pl.DataFrame({"second_id": [1]}).lazy()
+
+        assert get_data_fingerprint(first) != get_data_fingerprint(second)
+        assert get_source_key(first) != get_source_key(second)
 
     def test_source_key_file(self, tmp_path: Path):
         """Test source key for files uses absolute path."""
@@ -199,6 +205,27 @@ class TestGetOrLearnSchema:
         assert was_cached2 is True
         # schema.columns is a dict keyed by column name
         assert list(schema1.columns.keys()) == list(schema2.columns.keys())
+
+    def test_lazyframes_with_different_schemas_do_not_cross_contaminate(
+        self, tmp_path: Path, monkeypatch
+    ):
+        cache_dir = tmp_path / ".truthound"
+        monkeypatch.setattr(
+            "truthound.cache.get_cache_dir", lambda base_path=None: cache_dir
+        )
+        import truthound.cache
+
+        truthound.cache._global_cache = None
+        first = pl.DataFrame({"first_id": [1], "first_value": ["a"]}).lazy()
+        second = pl.DataFrame({"second_id": [1]}).lazy()
+
+        first_schema, first_cached = get_or_learn_schema(first)
+        second_schema, second_cached = get_or_learn_schema(second)
+
+        assert first_cached is False
+        assert second_cached is False
+        assert set(first_schema.columns) == {"first_id", "first_value"}
+        assert set(second_schema.columns) == {"second_id"}
 
     def test_force_learn_bypasses_cache(self, tmp_path: Path, monkeypatch):
         """Test force_learn parameter."""
